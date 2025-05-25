@@ -1,0 +1,1 @@
+rootProject.name = "palpite-f1-backend" 

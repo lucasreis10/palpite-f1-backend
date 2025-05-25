@@ -1,0 +1,59 @@
+{
+  "grandPrix": [
+    {
+      "season": 2025,
+      "round": 5,
+      "name": "Spanish Grand Prix",
+      "country": "Spain",
+      "city": "Barcelona",
+      "circuitName": "Circuit de Barcelona-Catalunya",
+      "circuitUrl": "https://en.wikipedia.org/wiki/Circuit_de_Barcelona-Catalunya",
+      "practice1DateTime": "2025-06-13T12:30:00",
+      "practice2DateTime": "2025-06-13T16:00:00",
+      "practice3DateTime": "2025-06-14T12:30:00",
+      "qualifyingDateTime": "2025-06-14T16:00:00",
+      "raceDateTime": "2025-06-15T14:00:00",
+      "timezone": "UTC+2",
+      "laps": 66,
+      "circuitLength": 4.67,
+      "description": "Grande Prêmio da Espanha no circuito da Catalunha."
+    },
+    {
+      "season": 2025,
+      "round": 6,
+      "name": "Canadian Grand Prix",
+      "country": "Canada",
+      "city": "Montreal",
+      "circuitName": "Circuit Gilles Villeneuve",
+      "circuitUrl": "https://en.wikipedia.org/wiki/Circuit_Gilles_Villeneuve",
+      "practice1DateTime": "2025-06-20T18:30:00",
+      "practice2DateTime": "2025-06-20T22:00:00",
+      "practice3DateTime": "2025-06-21T18:30:00",
+      "qualifyingDateTime": "2025-06-21T22:00:00",
+      "raceDateTime": "2025-06-22T20:00:00",
+      "timezone": "UTC-4",
+      "laps": 70,
+      "circuitLength": 4.36,
+      "description": "Grande Prêmio do Canadá em Montreal."
+    },
+    {
+      "season": 2025,
+      "round": 7,
+      "name": "British Grand Prix",
+      "country": "United Kingdom",
+      "city": "Silverstone",
+      "circuitName": "Silverstone Circuit",
+      "circuitUrl": "https://en.wikipedia.org/wiki/Silverstone_Circuit",
+      "practice1DateTime": "2025-07-04T12:30:00",
+      "practice2DateTime": "2025-07-04T16:00:00",
+      "practice3DateTime": "2025-07-05T12:30:00",
+      "qualifyingDateTime": "2025-07-05T16:00:00",
+      "sprintDateTime": "2025-07-06T15:30:00",
+      "raceDateTime": "2025-07-06T15:00:00",
+      "timezone": "UTC+1",
+      "laps": 52,
+      "circuitLength": 5.89,
+      "description": "Grande Prêmio da Grã-Bretanha em Silverstone com sprint."
+    }
+  ]
+} 
