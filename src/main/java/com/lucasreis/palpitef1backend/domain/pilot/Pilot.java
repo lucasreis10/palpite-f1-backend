@@ -1,5 +1,6 @@
 package com.lucasreis.palpitef1backend.domain.pilot;
 
+import com.lucasreis.palpitef1backend.domain.constructor.Constructor;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -44,6 +45,10 @@ public class Pilot {
     
     @Column
     private String code; // Código de 3 letras (ex: "HAM")
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "constructor_id")
+    private Constructor constructor; // Escuderia do piloto
     
     @Column(nullable = false)
     @Builder.Default

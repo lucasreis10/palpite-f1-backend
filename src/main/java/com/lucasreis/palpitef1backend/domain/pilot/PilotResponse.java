@@ -1,5 +1,6 @@
 package com.lucasreis.palpitef1backend.domain.pilot;
 
+import com.lucasreis.palpitef1backend.domain.constructor.ConstructorResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -34,6 +35,8 @@ public class PilotResponse {
     
     private String code;
     
+    private ConstructorResponse constructor;
+    
     private Boolean active;
     
     private LocalDateTime createdAt;
@@ -52,6 +55,8 @@ public class PilotResponse {
                 .url(pilot.getUrl())
                 .permanentNumber(pilot.getPermanentNumber())
                 .code(pilot.getCode())
+                .constructor(pilot.getConstructor() != null ? 
+                    ConstructorResponse.fromConstructor(pilot.getConstructor()) : null)
                 .active(pilot.getActive())
                 .createdAt(pilot.getCreatedAt())
                 .updatedAt(pilot.getUpdatedAt())

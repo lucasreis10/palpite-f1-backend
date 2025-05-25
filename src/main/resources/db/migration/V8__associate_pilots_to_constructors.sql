@@ -1,0 +1,2 @@
+-- Associar pilotos às escuderias (baseado na temporada 2024)
+-- Esta migration será executada após a V9 que popula os pilotos completos 

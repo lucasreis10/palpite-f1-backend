@@ -77,6 +77,8 @@ public class GuessController {
                 userId, grandPrixId, guessType);
         
         GuessResponse guess = guessService.getUserGuessForGrandPrix(userId, grandPrixId, guessType);
+        
+        
         return ResponseEntity.ok(guess);
     }
     

@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -105,10 +106,14 @@ public class GuessService {
     public GuessResponse getUserGuessForGrandPrix(Long userId, Long grandPrixId, GuessType guessType) {
         log.debug("Buscando palpite do usuário {} para GP {} tipo {}", userId, grandPrixId, guessType);
         
-        Guess guess = guessRepository.findByUserIdAndGrandPrixIdAndGuessType(userId, grandPrixId, guessType)
-                .orElseThrow(() -> new RuntimeException("Palpite não encontrado"));
+        Optional<Guess> guessOptional = guessRepository.findByUserIdAndGrandPrixIdAndGuessType(userId, grandPrixId, guessType);
         
-        return buildGuessResponse(guess);
+        if (guessOptional.isEmpty()) {
+            log.debug("Palpite não encontrado para usuário {} GP {} tipo {}", userId, grandPrixId, guessType);
+            return null;
+        }
+        
+        return buildGuessResponse(guessOptional.get());
     }
     
     public List<GuessResponse> getUserGuesses(Long userId) {
