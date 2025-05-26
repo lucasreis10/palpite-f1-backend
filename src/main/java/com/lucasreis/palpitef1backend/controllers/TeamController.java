@@ -13,6 +13,7 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/teams")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 @RequiredArgsConstructor
 public class TeamController {
     

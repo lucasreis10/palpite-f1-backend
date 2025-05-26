@@ -13,6 +13,7 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/guesses")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 @RequiredArgsConstructor
 public class GuessController {
     

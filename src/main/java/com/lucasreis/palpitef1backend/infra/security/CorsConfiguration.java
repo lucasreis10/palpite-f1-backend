@@ -14,21 +14,38 @@ public class CorsConfiguration {
     public CorsConfigurationSource corsConfigurationSource() {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
         
-        // Permitir origens do frontend
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        // Permitir TODAS as origens
+        configuration.addAllowedOriginPattern("*");
+        configuration.setAllowedOrigins(Arrays.asList("*"));
         
         // Permitir todos os métodos HTTP
-        configuration.setAllowedMethods(Arrays.asList(
-            "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
-        ));
+        configuration.setAllowedMethods(Arrays.asList("*"));
+        configuration.addAllowedMethod("GET");
+        configuration.addAllowedMethod("POST");
+        configuration.addAllowedMethod("PUT");
+        configuration.addAllowedMethod("DELETE");
+        configuration.addAllowedMethod("OPTIONS");
+        configuration.addAllowedMethod("PATCH");
+        configuration.addAllowedMethod("HEAD");
         
         // Permitir todos os headers
         configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.addAllowedHeader("*");
         
-        // Permitir credenciais
+        // Expor headers necessários
+        configuration.setExposedHeaders(Arrays.asList(
+            "Authorization", 
+            "Content-Type", 
+            "X-Requested-With", 
+            "Accept", 
+            "Origin", 
+            "Access-Control-Request-Method", 
+            "Access-Control-Request-Headers"
+        ));
+        
+        // NÃO permitir credenciais quando usando wildcard
         configuration.setAllowCredentials(false);
         
-    
         // Tempo de cache para preflight requests
         configuration.setMaxAge(3600L);
         

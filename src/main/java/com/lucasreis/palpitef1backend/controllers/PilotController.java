@@ -14,6 +14,7 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/pilots")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 @RequiredArgsConstructor
 public class PilotController {
     

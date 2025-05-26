@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @RestController
 @RequestMapping("/users")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 @RequiredArgsConstructor
 public class UserController {
     
