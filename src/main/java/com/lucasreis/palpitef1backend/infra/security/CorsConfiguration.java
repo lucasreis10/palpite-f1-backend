@@ -34,14 +34,13 @@ public class CorsConfiguration {
         // Permitir credenciais
         configuration.setAllowCredentials(true);
         
-       
-        
+    
         // Tempo de cache para preflight requests
         configuration.setMaxAge(3600L);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
-            
+        source.registerCorsConfiguration("/**", configuration);
+        
         return source;
     }
 } 
