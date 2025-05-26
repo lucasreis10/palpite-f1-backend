@@ -1,5 +1,9 @@
 package com.lucasreis.palpitef1backend.domain.grandprix;
 
+import com.lucasreis.palpitef1backend.domain.guess.CalculateScoresResponse;
+import com.lucasreis.palpitef1backend.domain.guess.GuessService;
+import com.lucasreis.palpitef1backend.domain.guess.GuessType;
+import com.lucasreis.palpitef1backend.domain.guess.SetRealResultRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,6 +20,7 @@ import java.util.stream.Collectors;
 public class GrandPrixService {
     
     private final GrandPrixRepository grandPrixRepository;
+    private final GuessService guessService;
     
     public List<GrandPrixResponse> getAllGrandPrix() {
         log.debug("Buscando todos os Grandes Prêmios");
@@ -289,6 +294,111 @@ public class GrandPrixService {
         log.debug("Grande Prêmio marcado como concluído: {}", updatedGrandPrix.getId());
         
         return GrandPrixResponse.fromGrandPrix(updatedGrandPrix);
+    }
+    
+    @Transactional
+    public CompleteEventResponse markAsCompletedWithScoreCalculation(Long id) {
+        log.debug("Marcando Grande Prêmio como concluído e calculando pontuações ID: {}", id);
+        
+        GrandPrix grandPrix = grandPrixRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Grande Prêmio não encontrado com ID: " + id));
+        
+        List<String> warnings = new ArrayList<>();
+        List<CalculateScoresResponse> calculationResults = new ArrayList<>();
+        boolean scoresCalculated = false;
+        
+        try {
+            // Verificar se existem palpites com resultado real para calcular
+            // Tentar calcular pontuações para QUALIFYING
+            try {
+                // Buscar palpites de qualifying que já têm resultado real definido
+                var qualifyingGuesses = guessService.getGrandPrixGuesses(id, GuessType.QUALIFYING);
+                if (!qualifyingGuesses.isEmpty()) {
+                    // Verificar se algum palpite já tem resultado real
+                    var guessWithResult = qualifyingGuesses.stream()
+                            .filter(guess -> guess.getRealResultPilots() != null && !guess.getRealResultPilots().isEmpty())
+                            .findFirst();
+                    
+                    if (guessWithResult.isPresent()) {
+                        SetRealResultRequest qualifyingRequest = new SetRealResultRequest();
+                        qualifyingRequest.setGrandPrixId(id);
+                        qualifyingRequest.setGuessType(GuessType.QUALIFYING);
+                        // Extrair IDs dos pilotos do resultado real
+                        var realResultPilotIds = guessWithResult.get().getRealResultPilots().stream()
+                                .map(pilot -> pilot.getId())
+                                .collect(Collectors.toList());
+                        qualifyingRequest.setRealResultPilotIds(realResultPilotIds);
+                        
+                        CalculateScoresResponse qualifyingResult = guessService.setRealResultAndCalculateScores(qualifyingRequest);
+                        calculationResults.add(qualifyingResult);
+                        scoresCalculated = true;
+                        log.debug("Pontuações de qualifying calculadas: {} palpites", qualifyingResult.getCalculatedGuesses());
+                    } else {
+                        warnings.add("Nenhum resultado real definido para qualifying - pontuações não calculadas");
+                    }
+                } else {
+                    warnings.add("Nenhum palpite de qualifying encontrado");
+                }
+            } catch (Exception e) {
+                log.warn("Erro ao calcular pontuações de qualifying: {}", e.getMessage());
+                warnings.add("Erro ao calcular pontuações de qualifying: " + e.getMessage());
+            }
+            
+            // Tentar calcular pontuações para RACE
+            try {
+                var raceGuesses = guessService.getGrandPrixGuesses(id, GuessType.RACE);
+                if (!raceGuesses.isEmpty()) {
+                    // Verificar se algum palpite já tem resultado real
+                    var guessWithResult = raceGuesses.stream()
+                            .filter(guess -> guess.getRealResultPilots() != null && !guess.getRealResultPilots().isEmpty())
+                            .findFirst();
+                    
+                    if (guessWithResult.isPresent()) {
+                        SetRealResultRequest raceRequest = new SetRealResultRequest();
+                        raceRequest.setGrandPrixId(id);
+                        raceRequest.setGuessType(GuessType.RACE);
+                        // Extrair IDs dos pilotos do resultado real
+                        var realResultPilotIds = guessWithResult.get().getRealResultPilots().stream()
+                                .map(pilot -> pilot.getId())
+                                .collect(Collectors.toList());
+                        raceRequest.setRealResultPilotIds(realResultPilotIds);
+                        
+                        CalculateScoresResponse raceResult = guessService.setRealResultAndCalculateScores(raceRequest);
+                        calculationResults.add(raceResult);
+                        scoresCalculated = true;
+                        log.debug("Pontuações de corrida calculadas: {} palpites", raceResult.getCalculatedGuesses());
+                    } else {
+                        warnings.add("Nenhum resultado real definido para corrida - pontuações não calculadas");
+                    }
+                } else {
+                    warnings.add("Nenhum palpite de corrida encontrado");
+                }
+            } catch (Exception e) {
+                log.warn("Erro ao calcular pontuações de corrida: {}", e.getMessage());
+                warnings.add("Erro ao calcular pontuações de corrida: " + e.getMessage());
+            }
+            
+        } catch (Exception e) {
+            log.error("Erro geral ao calcular pontuações: {}", e.getMessage());
+            warnings.add("Erro geral ao calcular pontuações: " + e.getMessage());
+        }
+        
+        // Marcar como concluído
+        grandPrix.setCompleted(true);
+        GrandPrix updatedGrandPrix = grandPrixRepository.save(grandPrix);
+        log.debug("Grande Prêmio marcado como concluído: {}", updatedGrandPrix.getId());
+        
+        String message = scoresCalculated ? 
+            "Evento marcado como concluído e pontuações calculadas com sucesso" :
+            "Evento marcado como concluído, mas pontuações não foram calculadas";
+        
+        return CompleteEventResponse.builder()
+                .grandPrix(GrandPrixResponse.fromGrandPrix(updatedGrandPrix))
+                .scoresCalculated(scoresCalculated)
+                .calculationResults(calculationResults)
+                .message(message)
+                .warnings(warnings)
+                .build();
     }
     
     @Transactional

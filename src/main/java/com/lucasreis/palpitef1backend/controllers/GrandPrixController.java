@@ -159,6 +159,13 @@ public class GrandPrixController {
         return ResponseEntity.ok(grandPrix);
     }
     
+    @PatchMapping("/{id}/complete-with-scores")
+    public ResponseEntity<CompleteEventResponse> markAsCompletedWithScoreCalculation(@PathVariable Long id) {
+        log.debug("Requisição para marcar Grande Prêmio como concluído e calcular pontuações ID: {}", id);
+        CompleteEventResponse response = grandPrixService.markAsCompletedWithScoreCalculation(id);
+        return ResponseEntity.ok(response);
+    }
+    
     @PatchMapping("/{id}/pending")
     public ResponseEntity<GrandPrixResponse> markAsPending(@PathVariable Long id) {
         log.debug("Requisição para marcar Grande Prêmio como pendente ID: {}", id);
