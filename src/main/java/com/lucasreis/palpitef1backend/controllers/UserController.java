@@ -30,5 +30,20 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
     
+    @GetMapping("/stats")
+    public ResponseEntity<UserStatsResponse> getUserStats() {
+        log.debug("Requisição para buscar estatísticas de usuários");
+        
+        long totalUsers = userRepository.count();
+        // Por enquanto, consideramos todos os usuários como ativos
+        // Futuramente pode ser implementado um campo 'active' na entidade User
+        long activeUsers = totalUsers;
+        
+        UserStatsResponse stats = new UserStatsResponse(totalUsers, activeUsers);
+        return ResponseEntity.ok(stats);
+    }
+    
     public record UserSummary(Long id, String name, String email) {}
+    
+    public record UserStatsResponse(Long total, Long active) {}
 } 

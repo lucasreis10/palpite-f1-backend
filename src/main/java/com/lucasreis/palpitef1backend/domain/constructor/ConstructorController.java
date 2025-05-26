@@ -9,7 +9,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/constructors")
+@RequestMapping("/constructors")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:3000")
 public class ConstructorController {
