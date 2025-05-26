@@ -1,17 +1,14 @@
 package com.lucasreis.palpitef1backend.controllers;
 
-import com.lucasreis.palpitef1backend.domain.user.User;
-import com.lucasreis.palpitef1backend.domain.user.UserRepository;
+import com.lucasreis.palpitef1backend.domain.user.*;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -20,32 +17,56 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserController {
     
-    private final UserRepository userRepository;
+    private final UserService userService;
     
     @GetMapping
-    public ResponseEntity<List<UserSummary>> getAllUsers() {
+    public ResponseEntity<List<UserResponse>> getAllUsers() {
         log.debug("Requisição para listar todos os usuários");
-        List<UserSummary> users = userRepository.findAll()
-                .stream()
-                .map(user -> new UserSummary(user.getId(), user.getName(), user.getEmail()))
-                .collect(Collectors.toList());
+        List<UserResponse> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
+    }
+    
+    @GetMapping("/{id}")
+    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
+        log.debug("Requisição para buscar usuário por ID: {}", id);
+        UserResponse user = userService.getUserById(id);
+        return ResponseEntity.ok(user);
+    }
+    
+    @PostMapping
+    public ResponseEntity<UserResponse> createUser(@RequestBody @Valid CreateUserRequest request) {
+        log.debug("Requisição para criar usuário: {}", request.getEmail());
+        UserResponse user = userService.createUser(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(user);
+    }
+    
+    @PutMapping("/{id}")
+    public ResponseEntity<UserResponse> updateUser(
+            @PathVariable Long id,
+            @RequestBody @Valid UpdateUserRequest request) {
+        log.debug("Requisição para atualizar usuário ID: {}", id);
+        UserResponse user = userService.updateUser(id, request);
+        return ResponseEntity.ok(user);
+    }
+    
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        log.debug("Requisição para deletar usuário ID: {}", id);
+        userService.deleteUser(id);
+        return ResponseEntity.noContent().build();
     }
     
     @GetMapping("/stats")
     public ResponseEntity<UserStatsResponse> getUserStats() {
         log.debug("Requisição para buscar estatísticas de usuários");
         
-        long totalUsers = userRepository.count();
-        // Por enquanto, consideramos todos os usuários como ativos
-        // Futuramente pode ser implementado um campo 'active' na entidade User
-        long activeUsers = totalUsers;
+        List<UserResponse> allUsers = userService.getAllUsers();
+        long totalUsers = allUsers.size();
+        long activeUsers = allUsers.stream().filter(UserResponse::getActive).count();
         
         UserStatsResponse stats = new UserStatsResponse(totalUsers, activeUsers);
         return ResponseEntity.ok(stats);
     }
-    
-    public record UserSummary(Long id, String name, String email) {}
     
     public record UserStatsResponse(Long total, Long active) {}
 } 
