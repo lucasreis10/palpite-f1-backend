@@ -14,39 +14,34 @@ public class CorsConfiguration {
     public CorsConfigurationSource corsConfigurationSource() {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
         
-        configuration.setAllowedOriginPatterns(List.of(
+        // Permitir origens do frontend
+        configuration.setAllowedOriginPatterns(Arrays.asList(
             "http://localhost:3000",
             "http://127.0.0.1:3000",
             "https://localhost:3000",
             "https://127.0.0.1:3000",
             "https://palpite-f1-frontend-production.up.railway.app"
         ));
-        configuration.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of(
-            "Authorization","Content-Type","X-Requested-With","Accept","Origin",
-            "Access-Control-Request-Method","Access-Control-Request-Headers"
+        
+        // Permitir todos os métodos HTTP
+        configuration.setAllowedMethods(Arrays.asList(
+            "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
         ));
+        
+        // Permitir todos os headers
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        
+        // Permitir credenciais
         configuration.setAllowCredentials(true);
+        
+       
+        
+        // Tempo de cache para preflight requests
         configuration.setMaxAge(3600L);
-
+        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration("/**", config);
+            
         return source;
-    }
-
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http,
-                                           CorsConfigurationSource cors) throws Exception {
-
-        http
-            .cors(c -> c.configurationSource(cors))   // <- usa o bean
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // libera preflight
-                .anyRequest().authenticated()
-            );
-
-        return http.build();
     }
 } 
