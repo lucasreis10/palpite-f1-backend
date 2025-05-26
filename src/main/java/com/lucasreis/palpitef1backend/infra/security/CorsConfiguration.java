@@ -15,13 +15,7 @@ public class CorsConfiguration {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
         
         // Permitir origens do frontend
-        configuration.setAllowedOriginPatterns(Arrays.asList(
-            "http://localhost:3000",
-            "http://127.0.0.1:3000",
-            "https://localhost:3000",
-            "https://127.0.0.1:3000",
-            "https://palpite-f1-frontend-production.up.railway.app"
-        ));
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
         
         // Permitir todos os métodos HTTP
         configuration.setAllowedMethods(Arrays.asList(
@@ -32,7 +26,7 @@ public class CorsConfiguration {
         configuration.setAllowedHeaders(Arrays.asList("*"));
         
         // Permitir credenciais
-        configuration.setAllowCredentials(true);
+        configuration.setAllowCredentials(false);
         
     
         // Tempo de cache para preflight requests
