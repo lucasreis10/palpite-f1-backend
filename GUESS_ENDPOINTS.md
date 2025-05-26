@@ -162,7 +162,7 @@ RACE - Palpite da corrida
 
 ### 1. Usuário cria palpite para qualifying
 ```bash
-curl -X POST http://localhost:8081/api/guesses/user/1 \
+curl -X POST https://javaspringboot-production-a2d3.up.railway.app/api/guesses/user/1 \
   -H "Content-Type: application/json" \
   -d '{
     "grandPrixId": 1,
@@ -173,7 +173,7 @@ curl -X POST http://localhost:8081/api/guesses/user/1 \
 
 ### 2. Admin define resultado e calcula pontuações
 ```bash
-curl -X POST http://localhost:8081/api/guesses/admin/calculate-scores \
+curl -X POST https://javaspringboot-production-a2d3.up.railway.app/api/guesses/admin/calculate-scores \
   -H "Content-Type: application/json" \
   -d '{
     "grandPrixId": 1,
@@ -184,7 +184,7 @@ curl -X POST http://localhost:8081/api/guesses/admin/calculate-scores \
 
 ### 3. Ver ranking do qualifying
 ```bash
-curl -X GET "http://localhost:8081/api/guesses/grand-prix/1/ranking?guessType=QUALIFYING"
+curl -X GET "https://javaspringboot-production-a2d3.up.railway.app/api/guesses/grand-prix/1/ranking?guessType=QUALIFYING"
 ```
 
 ---

@@ -72,4 +72,16 @@ public interface GuessRepository extends JpaRepository<Guess, Long> {
            "WHERE t.id = :teamId AND g.grandPrix.season = :season AND g.calculated = true " +
            "ORDER BY g.grandPrix.round, g.guessType")
     List<Guess> findByTeamIdAndSeason(@Param("teamId") Long teamId, @Param("season") Integer season);
+    
+    // Buscar o palpite com maior pontuação
+    @Query("SELECT g FROM Guess g WHERE g.calculated = true ORDER BY g.score DESC")
+    List<Guess> findTop1ByCalculatedTrueOrderByScoreDesc();
+    
+    // Buscar palpites de uma temporada que foram calculados
+    @Query("SELECT g FROM Guess g WHERE g.grandPrix.season = :season AND g.calculated = true")
+    List<Guess> findBySeasonAndCalculatedTrue(@Param("season") Integer season);
+    
+    // Buscar palpites calculados por GP, tipo e que têm resultado real
+    @Query("SELECT g FROM Guess g WHERE g.grandPrix.id = :grandPrixId AND g.guessType = :guessType AND g.calculated = true AND g.realResultPilotIds IS NOT NULL")
+    List<Guess> findByGrandPrixIdAndGuessTypeAndCalculatedTrue(@Param("grandPrixId") Long grandPrixId, @Param("guessType") String guessType);
 } 

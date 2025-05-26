@@ -205,24 +205,24 @@ Marca um GP como pendente (não concluído).
 
 ### Calendário Completo de uma Temporada:
 ```bash
-curl -X GET http://localhost:8081/api/grand-prix/season/2025
+curl -X GET https://javaspringboot-production-a2d3.up.railway.app/api/grand-prix/season/2025
 ```
 
 ### Próximos Fins de Semana de Sprint:
 ```bash
-curl -X GET http://localhost:8081/api/grand-prix/season/2025/sprint
+curl -X GET https://javaspringboot-production-a2d3.up.railway.app/api/grand-prix/season/2025/sprint
 ```
 
 ### Criar Calendário Completo:
 ```bash
-curl -X POST http://localhost:8081/api/grand-prix/batch \
+curl -X POST https://javaspringboot-production-a2d3.up.railway.app/api/grand-prix/batch \
   -H "Content-Type: application/json" \
   -d @calendario_2025.json
 ```
 
 ### Marcar GP como Realizado:
 ```bash
-curl -X PATCH http://localhost:8081/api/grand-prix/1/complete
+curl -X PATCH https://javaspringboot-production-a2d3.up.railway.app/api/grand-prix/1/complete
 ```
 
 ---

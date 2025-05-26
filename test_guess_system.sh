@@ -3,7 +3,7 @@
 # Script de teste para o Sistema de Palpites
 # Demonstra o fluxo completo: criar palpites -> definir resultado -> calcular pontuações
 
-BASE_URL="http://localhost:8081/api"
+BASE_URL="https://javaspringboot-production-a2d3.up.railway.app/api"
 
 echo "🏁 TESTANDO SISTEMA DE PALPITES DA FÓRMULA 1"
 echo "=============================================="
