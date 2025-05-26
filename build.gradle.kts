@@ -28,12 +28,14 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
 
     // DevTools for hot reload
     developmentOnly("org.springframework.boot:spring-boot-devtools")
 
     // Database
     runtimeOnly("com.mysql:mysql-connector-j")
+    runtimeOnly("org.postgresql:postgresql")
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-mysql")
 
@@ -58,7 +60,7 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-// Configuração do Flyway
+// Configuração do Flyway para desenvolvimento local
 flyway {
     url = "jdbc:mysql://localhost:3306/palpite_f1"
     user = "palpite_f1"

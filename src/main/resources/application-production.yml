@@ -1,0 +1,29 @@
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    validate-on-migrate: false
+    out-of-order: true
+
+server:
+  port: ${PORT:8080}
+  servlet:
+    context-path: /api
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:86400000}
+
+logging:
+  level:
+    org.springframework.security: INFO
+    com.lucasreis.palpitef1backend: INFO
+    org.springframework.web: INFO 

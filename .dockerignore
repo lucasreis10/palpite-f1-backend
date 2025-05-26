@@ -1,0 +1,42 @@
+# Build artifacts
+build/
+target/
+*.jar
+*.war
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Gradle
+.gradle/
+gradle-wrapper.jar
+
+# Logs
+*.log
+logs/
+
+# Test files
+test_*.json
+test_*.sh
+*.md
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Railway
+railway.toml
+railway-fullstack.toml 

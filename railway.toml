@@ -1,0 +1,17 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "java -jar app.jar"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+
+[build.env]
+GRADLE_OPTS = "-Dorg.gradle.daemon=false"
+
+[deploy.env]
+SPRING_PROFILES_ACTIVE = "production"
+SERVER_PORT = "8080"
+JWT_SECRET = "${{JWT_SECRET}}"
+JWT_EXPIRATION = "86400000" 
