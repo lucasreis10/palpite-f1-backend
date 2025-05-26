@@ -1,17 +1,30 @@
-# Dockerfile para Spring Boot
-FROM openjdk:17-jdk-slim
+# syntax=docker/dockerfile:1
 
-# Definir diretório de trabalho
+########################
+# Etapa de build
+########################
+FROM eclipse-temurin:17-jdk-alpine AS build
+
 WORKDIR /app
 
-# Copiar arquivos de build
-COPY build/libs/*.jar app.jar
+# Copia o projeto
+COPY . .
 
-# Expor porta
-EXPOSE 8080
+# Garante que o gradlew é executável (caso o bit não venha no git)
+RUN chmod +x gradlew
 
-# Variáveis de ambiente
-ENV SPRING_PROFILES_ACTIVE=prod
+# Compila sem rodar testes
+RUN ./gradlew clean build -x test --no-daemon
 
-# Comando para executar a aplicação
-ENTRYPOINT ["java", "-jar", "/app/app.jar"] 
+########################
+# Imagem final, só com o JRE
+########################
+FROM eclipse-temurin:17-jre-alpine
+
+WORKDIR /app
+
+# Copia o artefato pronto da etapa anterior
+COPY --from=build /app/build/libs/*.jar app.jar
+
+# Sobe a aplicação
+CMD ["java", "-jar", "app.jar"]
