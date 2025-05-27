@@ -2,11 +2,13 @@ package com.lucasreis.palpitef1backend.domain.team;
 
 import com.lucasreis.palpitef1backend.domain.user.User;
 import com.lucasreis.palpitef1backend.domain.user.UserRepository;
+import com.lucasreis.palpitef1backend.domain.guess.GuessRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -17,6 +19,7 @@ public class TeamService {
     
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
+    private final GuessRepository guessRepository;
     
     public List<TeamResponse> getAllTeams() {
         log.debug("Buscando todas as equipes");
@@ -154,10 +157,36 @@ public class TeamService {
     
     public List<TeamResponse> getRankingByYear(Integer year) {
         log.debug("Buscando ranking de equipes do ano: {}", year);
-        return teamRepository.findTopTeamsByYear(year)
-                .stream()
-                .map(TeamResponse::fromTeam)
+        List<Team> teams = teamRepository.findByYearAndActiveOrderByTotalScoreDesc(year, true);
+        
+        // Calcular pontuação real de cada equipe baseado nos palpites
+        return teams.stream()
+                .map(team -> {
+                    BigDecimal calculatedScore = calculateTeamScore(team, year);
+                    TeamResponse response = TeamResponse.fromTeam(team);
+                    response.setTotalScore(calculatedScore.intValue());
+                    return response;
+                })
+                .sorted((a, b) -> Integer.compare(b.getTotalScore(), a.getTotalScore()))
                 .collect(Collectors.toList());
+    }
+    
+    private BigDecimal calculateTeamScore(Team team, Integer year) {
+        try {
+            // Buscar pontuação total do usuário 1 na temporada
+            Double user1ScoreDouble = guessRepository.getTotalScoreByUserAndSeason(team.getUser1().getId(), year);
+            BigDecimal user1Score = user1ScoreDouble != null ? BigDecimal.valueOf(user1ScoreDouble) : BigDecimal.ZERO;
+            
+            // Buscar pontuação total do usuário 2 na temporada
+            Double user2ScoreDouble = guessRepository.getTotalScoreByUserAndSeason(team.getUser2().getId(), year);
+            BigDecimal user2Score = user2ScoreDouble != null ? BigDecimal.valueOf(user2ScoreDouble) : BigDecimal.ZERO;
+            
+            // Somar as pontuações dos dois usuários
+            return user1Score.add(user2Score);
+        } catch (Exception e) {
+            log.error("Erro ao calcular pontuação da equipe {}: {}", team.getId(), e.getMessage());
+            return BigDecimal.ZERO;
+        }
     }
     
     private void validateCreateTeamRequest(CreateTeamRequest request) {

@@ -6,6 +6,8 @@ import com.lucasreis.palpitef1backend.domain.guess.Guess;
 import com.lucasreis.palpitef1backend.domain.guess.GuessRepository;
 import com.lucasreis.palpitef1backend.domain.pilot.Pilot;
 import com.lucasreis.palpitef1backend.domain.pilot.PilotRepository;
+import com.lucasreis.palpitef1backend.domain.team.Team;
+import com.lucasreis.palpitef1backend.domain.team.TeamRepository;
 import com.lucasreis.palpitef1backend.domain.user.User;
 import com.lucasreis.palpitef1backend.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ public class DashboardService {
     private final UserRepository userRepository;
     private final GrandPrixRepository grandPrixRepository;
     private final PilotRepository pilotRepository;
+    private final TeamRepository teamRepository;
     
     public DashboardStatsResponse getDashboardStats() {
         log.debug("Calculando estatísticas da dashboard");
@@ -124,17 +127,31 @@ public class DashboardService {
                     Collectors.reducing(BigDecimal.ZERO, Guess::getScore, BigDecimal::add)
                 ));
             
+            // Buscar todas as equipes ativas da temporada
+            List<Team> activeTeams = teamRepository.findByYearAndActiveOrderByTotalScoreDesc(season, true);
+            Map<Long, Team> userTeamMap = new HashMap<>();
+            
+            // Mapear usuários para suas equipes
+            for (Team team : activeTeams) {
+                userTeamMap.put(team.getUser1().getId(), team);
+                userTeamMap.put(team.getUser2().getId(), team);
+            }
+            
             // Criar ranking
             List<TopUserResponse> ranking = userScores.entrySet().stream()
                 .map(entry -> {
                     User user = entry.getKey();
-                    return new TopUserResponse(
-                        user.getId(),
-                        user.getName(),
-                        user.getEmail(),
-                        entry.getValue(),
-                        0 // posição será definida depois
-                    );
+                    Team userTeam = userTeamMap.get(user.getId());
+                    
+                    return TopUserResponse.builder()
+                        .id(user.getId())
+                        .name(user.getName())
+                        .email(user.getEmail())
+                        .totalScore(entry.getValue())
+                        .position(0) // posição será definida depois
+                        .teamName(userTeam != null ? userTeam.getName() : "Sem Equipe")
+                        .teamId(userTeam != null ? userTeam.getId() : null)
+                        .build();
                 })
                 .sorted((a, b) -> b.getTotalScore().compareTo(a.getTotalScore()))
                 .limit(limit)

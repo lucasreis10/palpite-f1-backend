@@ -47,6 +47,13 @@ public class TeamController {
         return ResponseEntity.ok(teams);
     }
     
+    @GetMapping("/ranking/season/{season}")
+    public ResponseEntity<List<TeamResponse>> getTeamRankingBySeason(@PathVariable Integer season) {
+        log.debug("Requisição para buscar ranking de equipes da temporada: {}", season);
+        List<TeamResponse> teams = teamService.getRankingByYear(season);
+        return ResponseEntity.ok(teams);
+    }
+    
     @GetMapping("/{id}")
     public ResponseEntity<TeamResponse> getTeamById(@PathVariable Long id) {
         log.debug("Requisição para buscar equipe por ID: {}", id);
