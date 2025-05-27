@@ -163,8 +163,8 @@ public class GuessService {
         // Validar pilotos do resultado real
         validatePilots(request.getRealResultPilotIds());
         
-        // Buscar todos os palpites não calculados para este GP e tipo
-        List<Guess> guesses = guessRepository.findByGrandPrixIdAndGuessTypeAndCalculatedFalse(
+        // Buscar todos os palpites para este GP e tipo (calculados ou não)
+        List<Guess> guesses = guessRepository.findByGrandPrixIdAndGuessTypeOrderByCreatedAt(
                 request.getGrandPrixId(), request.getGuessType());
         
         if (guesses.isEmpty()) {
@@ -172,10 +172,13 @@ public class GuessService {
         }
         
         List<GuessResponse> calculatedGuesses = new ArrayList<>();
+        int recalculatedCount = 0;
         
         // Calcular pontuação para cada palpite
         for (Guess guess : guesses) {
             try {
+                boolean wasAlreadyCalculated = guess.isCalculated();
+                
                 // Definir resultado real
                 guess.setRealResultPilotIds(new ArrayList<>(request.getRealResultPilotIds()));
                 
@@ -187,15 +190,24 @@ public class GuessService {
                 Guess savedGuess = guessRepository.save(guess);
                 calculatedGuesses.add(buildGuessResponse(savedGuess));
                 
-                log.debug("Pontuação calculada para palpite {}: {}", guess.getId(), score);
+                if (wasAlreadyCalculated) {
+                    recalculatedCount++;
+                    log.debug("Pontuação recalculada para palpite {}: {}", guess.getId(), score);
+                } else {
+                    log.debug("Pontuação calculada para palpite {}: {}", guess.getId(), score);
+                }
                 
             } catch (Exception e) {
                 log.error("Erro ao calcular pontuação para palpite {}: {}", guess.getId(), e.getMessage());
             }
         }
-        
+
         // Ordenar por pontuação (maior primeiro)
         calculatedGuesses.sort((a, b) -> b.getScore().compareTo(a.getScore()));
+        
+        String message = recalculatedCount > 0 
+            ? String.format("Pontuações calculadas com sucesso (%d recalculadas)", recalculatedCount)
+            : "Pontuações calculadas com sucesso";
         
         return CalculateScoresResponse.builder()
                 .grandPrixId(request.getGrandPrixId())
@@ -204,10 +216,11 @@ public class GuessService {
                 .totalGuesses(guesses.size())
                 .calculatedGuesses(calculatedGuesses.size())
                 .results(calculatedGuesses)
-                .message("Pontuações calculadas com sucesso")
+                .message(message)
                 .build();
     }
-    
+
+
     @Transactional
     public void deleteGuess(Long userId, Long guessId) {
         log.debug("Deletando palpite {} do usuário {}", guessId, userId);

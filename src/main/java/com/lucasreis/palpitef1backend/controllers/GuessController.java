@@ -118,12 +118,12 @@ public class GuessController {
     // ========== ENDPOINTS ADMINISTRATIVOS ==========
     
     @PostMapping("/admin/calculate-scores")
-    public ResponseEntity<CalculateScoresResponse> setRealResultAndCalculateScores(
-            @RequestBody @Valid SetRealResultRequest request) {
-        log.debug("Requisição administrativa para definir resultado real e calcular pontuações para GP {} tipo {}", 
-                request.getGrandPrixId(), request.getGuessType());
-        
-        CalculateScoresResponse response = guessService.setRealResultAndCalculateScores(request);
-        return ResponseEntity.ok(response);
+        public ResponseEntity<CalculateScoresResponse> setRealResultAndCalculateScores(
+                @RequestBody @Valid SetRealResultRequest request) {
+            log.debug("Requisição administrativa para definir resultado real e calcular pontuações para GP {} tipo {}",
+                    request.getGrandPrixId(), request.getGuessType());
+
+            CalculateScoresResponse response = guessService.setRealResultAndCalculateScores(request);
+            return ResponseEntity.ok(response);
     }
 } 
