@@ -172,4 +172,14 @@ public class GrandPrixController {
         GrandPrixResponse grandPrix = grandPrixService.markAsPending(id);
         return ResponseEntity.ok(grandPrix);
     }
+    
+    @PostMapping("/import/{season}")
+    public ResponseEntity<ImportEventsResponse> importEventsFromJolpica(@PathVariable Integer season) {
+        log.info("Requisição para importar eventos da temporada {} da API jolpica-f1", season);
+        ImportEventsResponse response = grandPrixService.importEventsFromJolpica(season);
+        
+        // Retornar 207 Multi-Status se houve erros, 200 se tudo foi importado com sucesso
+        HttpStatus status = HttpStatus.OK;
+        return ResponseEntity.status(status).body(response);
+    }
 } 

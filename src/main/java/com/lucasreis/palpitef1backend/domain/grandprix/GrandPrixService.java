@@ -21,6 +21,7 @@ public class GrandPrixService {
     
     private final GrandPrixRepository grandPrixRepository;
     private final GuessService guessService;
+    private final JolpicaImportService jolpicaImportService;
     
     public List<GrandPrixResponse> getAllGrandPrix() {
         log.debug("Buscando todos os Grandes Prêmios");
@@ -413,6 +414,12 @@ public class GrandPrixService {
         log.debug("Grande Prêmio marcado como pendente: {}", updatedGrandPrix.getId());
         
         return GrandPrixResponse.fromGrandPrix(updatedGrandPrix);
+    }
+    
+    
+    public ImportEventsResponse importEventsFromJolpica(Integer season) {
+        log.info("Iniciando importação de eventos da temporada {} via JolpicaImportService", season);
+        return jolpicaImportService.importEventsFromJolpica(season);
     }
     
     private void validateCreateGrandPrixRequest(CreateGrandPrixRequest request) {
