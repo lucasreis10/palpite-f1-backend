@@ -126,4 +126,37 @@ public class GuessController {
             CalculateScoresResponse response = guessService.setRealResultAndCalculateScores(request);
             return ResponseEntity.ok(response);
     }
+    
+    // ========== ENDPOINTS PARA RANKING E ESTATÍSTICAS ==========
+    
+    @GetMapping("/season/{season}/ranking")
+    public ResponseEntity<List<Object[]>> getSeasonGeneralRanking(@PathVariable Integer season) {
+        log.debug("Requisição para buscar ranking geral da temporada {}", season);
+        
+        List<Object[]> ranking = guessService.getSeasonGeneralRanking(season);
+        return ResponseEntity.ok(ranking);
+    }
+    
+    @GetMapping("/season/{season}/ranking/{guessType}")
+    public ResponseEntity<List<GuessResponse>> getSeasonRankingByType(
+            @PathVariable Integer season,
+            @PathVariable GuessType guessType) {
+        log.debug("Requisição para buscar ranking da temporada {} por tipo {}", season, guessType);
+        
+        List<GuessResponse> ranking = guessService.getSeasonRankingByGuessType(season, guessType);
+        return ResponseEntity.ok(ranking);
+    }
+    
+    // ========== ENDPOINTS DE HISTÓRICO ==========
+    
+    @GetMapping("/grand-prix/{grandPrixId}/history")
+    public ResponseEntity<String> getGrandPrixHistory(@PathVariable Long grandPrixId) {
+        log.debug("Requisição para buscar histórico do GP {}", grandPrixId);
+        return ResponseEntity.ok("Histórico do GP " + grandPrixId + " - Funcionalidade em desenvolvimento");
+    }
+    
+    @GetMapping("/test-history")
+    public ResponseEntity<String> testHistory() {
+        return ResponseEntity.ok("Endpoint de histórico funcionando no GuessController!");
+    }
 } 

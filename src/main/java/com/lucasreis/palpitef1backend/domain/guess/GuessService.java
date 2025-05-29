@@ -310,4 +310,20 @@ public class GuessService {
                 .filter(pilot -> pilot != null)
                 .collect(Collectors.toList());
     }
+    
+    // ========== MÉTODOS PARA RANKING E ESTATÍSTICAS ==========
+    
+    public List<Object[]> getSeasonGeneralRanking(Integer season) {
+        log.debug("Buscando ranking geral da temporada {}", season);
+        return guessRepository.getSeasonGeneralRanking(season);
+    }
+    
+    public List<GuessResponse> getSeasonRankingByGuessType(Integer season, GuessType guessType) {
+        log.debug("Buscando ranking da temporada {} por tipo {}", season, guessType);
+        
+        List<Guess> guesses = guessRepository.findSeasonRankingByGuessType(season, guessType);
+        return guesses.stream()
+                .map(this::buildGuessResponse)
+                .collect(Collectors.toList());
+    }
 }
