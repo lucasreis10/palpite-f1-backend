@@ -30,9 +30,10 @@ public class SecurityConfiguration {
             .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/auth/**").permitAll() // Endpoints de autenticação
-                .requestMatchers("/pilots").permitAll() // GET público para pilotos
+                .requestMatchers("/pilots/**").permitAll() // Todos endpoints de pilotos (inclui /pilots/active)
+                .requestMatchers("/grand-prix/next").permitAll() // Próximo GP público
                 .requestMatchers("/health", "/actuator/health").permitAll() // Health check
-                .anyRequest().authenticated() // Proteger todas as outras rotas
+                .anyRequest().permitAll() // Por enquanto, permitir todas as outras rotas
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider)

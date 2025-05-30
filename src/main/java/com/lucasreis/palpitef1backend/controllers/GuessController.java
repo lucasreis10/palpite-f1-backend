@@ -79,6 +79,10 @@ public class GuessController {
         
         GuessResponse guess = guessService.getUserGuessForGrandPrix(userId, grandPrixId, guessType);
         
+        if (guess == null) {
+            log.debug("Palpite não encontrado para usuário {} GP {} tipo {}", userId, grandPrixId, guessType);
+            return ResponseEntity.notFound().build();
+        }
         
         return ResponseEntity.ok(guess);
     }

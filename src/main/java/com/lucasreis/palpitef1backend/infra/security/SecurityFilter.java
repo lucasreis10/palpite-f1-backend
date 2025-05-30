@@ -31,78 +31,47 @@ public class SecurityFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
-        
-        try {
-            log.debug("Processing request to: {} {}", request.getMethod(), request.getServletPath());
+        log.debug("Processing request to: {}", request.getServletPath());
 
-            // Skip filter for public endpoints
-            String path = request.getServletPath();
-            if (isPublicEndpoint(path, request.getMethod())) {
-                log.debug("Skipping security filter for public endpoint: {} {}", request.getMethod(), path);
-                filterChain.doFilter(request, response);
-                return;
-            }
+        // Skip filter for public endpoints
+        String path = request.getServletPath();
+        if (path.contains("/api/auth") || 
+            (path.contains("/api/pilots") && "GET".equals(request.getMethod()))) {
+            log.debug("Skipping security filter for public endpoint: {}", path);
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-            final String authHeader = request.getHeader("Authorization");
-            log.debug("Authorization header present: {}", authHeader != null);
+        final String authHeader = request.getHeader("Authorization");
+        log.debug("Authorization header: {}", authHeader);
 
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                log.debug("No valid authorization header found");
-                filterChain.doFilter(request, response);
-                return;
-            }
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            log.debug("No valid authorization header found");
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-            final String jwt = authHeader.substring(7);
-            log.debug("Extracted JWT token (length: {})", jwt.length());
+        final String jwt = authHeader.substring(7);
+        final String userEmail = tokenService.extractUsername(jwt);
+        log.debug("Extracted email from token: {}", userEmail);
 
-            final String userEmail = tokenService.extractUsername(jwt);
-            log.debug("Extracted email from token: {}", userEmail);
-
-            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = this.userRepository.findByEmail(userEmail);
-                log.debug("Found user details: {}", userDetails != null ? userDetails.getUsername() : "null");
-                
-                if (userDetails != null && tokenService.isTokenValid(jwt, userDetails)) {
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            userDetails.getAuthorities()
-                    );
-                    authToken.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request)
-                    );
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                    log.debug("Authentication token set in SecurityContext for user: {}", userEmail);
-                } else {
-                    log.warn("Token validation failed for user: {}", userEmail);
-                }
-            }
+        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            UserDetails userDetails = this.userRepository.findByEmail(userEmail);
+            log.debug("Found user details: {}", userDetails);
             
-        } catch (Exception e) {
-            log.error("Error in SecurityFilter: {}", e.getMessage(), e);
-            // Não interromper a cadeia de filtros mesmo com erro
-            SecurityContextHolder.clearContext();
+            if (tokenService.isTokenValid(jwt, userDetails)) {
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities()
+                );
+                authToken.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request)
+                );
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+                log.debug("Authentication token set in SecurityContext");
+            }
         }
-        
         filterChain.doFilter(request, response);
-    }
-
-    private boolean isPublicEndpoint(String path, String method) {
-        // Endpoints de autenticação
-        if (path.contains("/auth")) {
-            return true;
-        }
-        
-        // Endpoint de pilotos (apenas GET)
-        if (path.contains("/pilots") && "GET".equals(method)) {
-            return true;
-        }
-        
-        // Health checks
-        if (path.contains("/health") || path.contains("/actuator")) {
-            return true;
-        }
-        
-        return false;
     }
 } 
