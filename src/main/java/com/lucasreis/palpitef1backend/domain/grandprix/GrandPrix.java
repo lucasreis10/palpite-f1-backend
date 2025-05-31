@@ -78,6 +78,9 @@ public class GrandPrix {
     @Column(length = 1000)
     private String description; // Descrição do GP
     
+    @Column(name = "betting_deadline")
+    private LocalDateTime bettingDeadline; // Prazo para palpites
+    
     @Column(nullable = false)
     @Builder.Default
     private Boolean active = true; // Se o GP está ativo no calendário
@@ -102,5 +105,24 @@ public class GrandPrix {
     // Método para obter o nome completo do GP
     public String getFullName() {
         return name + " - " + country;
+    }
+
+    // Método para calcular o prazo padrão de palpites (sexta-feira 22h antes do GP)
+    public void setDefaultBettingDeadline() {
+        if (raceDateTime != null) {
+            // Encontrar a sexta-feira anterior ao GP
+            LocalDateTime friday = raceDateTime.minusDays(raceDateTime.getDayOfWeek().getValue() - 5);
+            // Definir o horário para 22h
+            this.bettingDeadline = friday.withHour(22).withMinute(0).withSecond(0).withNano(0);
+        }
+    }
+
+    // Método para atualizar o prazo de palpites se não estiver definido
+    @PrePersist
+    @PreUpdate
+    private void setDefaultBettingDeadlineIfNotSet() {
+        if (this.bettingDeadline == null) {
+            setDefaultBettingDeadline();
+        }
     }
 } 
