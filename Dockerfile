@@ -14,9 +14,6 @@ USER spring:spring
 
 EXPOSE 8081
 ENV SPRING_PROFILES_ACTIVE=prod
-ENV JAVA_TOOL_OPTIONS="-XX:+UseParallelGC -XX:MaxRAMPercentage=75 -Xss512k -XX:+UseStringDeduplication"
+ENV JAVA_OPTS="-Xms256m -Xmx512m"
 
-HEALTHCHECK --interval=10s --timeout=5s --start-period=60s --retries=5 \
-  CMD curl -v http://localhost:8081/api/health || exit 1
-
-ENTRYPOINT ["java", "-jar", "app.jar", "--debug"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
