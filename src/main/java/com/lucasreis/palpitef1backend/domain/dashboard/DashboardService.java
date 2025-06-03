@@ -232,6 +232,23 @@ public class DashboardService {
                 return new ArrayList<>();
             }
             
+            // Buscar todas as equipes ativas para mapear usuários
+            GrandPrix grandPrix = grandPrixRepository.findById(grandPrixId).orElse(null);
+            Integer season = grandPrix != null ? grandPrix.getSeason() : 2025;
+            
+            List<Team> activeTeams = teamRepository.findByYearAndActiveOrderByTotalScoreDesc(season, true);
+            Map<Long, Team> userTeamMap = new HashMap<>();
+            
+            // Mapear usuários para suas equipes
+            for (Team team : activeTeams) {
+                if (team.getUser1() != null) {
+                    userTeamMap.put(team.getUser1().getId(), team);
+                }
+                if (team.getUser2() != null) {
+                    userTeamMap.put(team.getUser2().getId(), team);
+                }
+            }
+            
             // Converter para ParticipantGuess
             List<LastResultResponse.ParticipantGuess> guesses = new ArrayList<>();
             for (int i = 0; i < calculatedGuesses.size(); i++) {
@@ -239,10 +256,14 @@ public class DashboardService {
                 User user = guess.getUser();
                 
                 if (user != null) {
+                    Team userTeam = userTeamMap.get(user.getId());
+                    String teamName = userTeam != null ? userTeam.getName() : "Sem Equipe";
+                    
                     guesses.add(new LastResultResponse.ParticipantGuess(
                         user.getId(),
                         user.getName(),
                         user.getEmail(),
+                        teamName,
                         guess.getScore(),
                         i + 1, // posição no ranking
                         true // tem palpite

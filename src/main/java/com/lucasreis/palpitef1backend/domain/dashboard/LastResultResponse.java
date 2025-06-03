@@ -24,6 +24,7 @@ public class LastResultResponse {
         private Long userId;
         private String userName;
         private String userEmail;
+        private String teamName;
         private BigDecimal score;
         private Integer position;
         private Boolean hasGuess;
