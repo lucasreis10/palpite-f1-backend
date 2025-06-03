@@ -77,7 +77,7 @@ public class DashboardService {
         List<GrandPrix> recentCompleted = grandPrixRepository.findByCompletedTrueOrderByRaceDateTimeDesc();
         
         if (recentCompleted.isEmpty()) {
-            return new LastResultResponse("Nenhum resultado disponível", List.of(), List.of());
+            return new LastResultResponse("Nenhum resultado disponível", List.of(), List.of(), List.of(), List.of());
         }
         
         GrandPrix lastGP = recentCompleted.get(0);
@@ -86,7 +86,11 @@ public class DashboardService {
         List<PilotResultInfo> qualifyingResults = getLastResultFromDatabase(lastGP.getId(), GuessType.QUALIFYING);
         List<PilotResultInfo> raceResults = getLastResultFromDatabase(lastGP.getId(), GuessType.RACE);
         
-        return new LastResultResponse(lastGP.getName(), qualifyingResults, raceResults);
+        // Buscar palpites dos usuários com pontuações
+        List<LastResultResponse.ParticipantGuess> qualifyingGuesses = getUserGuesses(lastGP.getId(), GuessType.QUALIFYING);
+        List<LastResultResponse.ParticipantGuess> raceGuesses = getUserGuesses(lastGP.getId(), GuessType.RACE);
+        
+        return new LastResultResponse(lastGP.getName(), qualifyingResults, raceResults, qualifyingGuesses, raceGuesses);
     }
 
     private BestScoreInfo getBestScoreFromDatabase() {
@@ -214,6 +218,41 @@ public class DashboardService {
             return results;
         } catch (Exception e) {
             log.error("Erro ao buscar último resultado", e);
+            return new ArrayList<>();
+        }
+    }
+
+    private List<LastResultResponse.ParticipantGuess> getUserGuesses(Long grandPrixId, GuessType guessType) {
+        try {
+            // Buscar palpites calculados ordenados por pontuação
+            List<Guess> calculatedGuesses = guessRepository.findByGrandPrixIdAndGuessTypeCalculatedOrderByScore(
+                grandPrixId, guessType);
+            
+            if (calculatedGuesses.isEmpty()) {
+                return new ArrayList<>();
+            }
+            
+            // Converter para ParticipantGuess
+            List<LastResultResponse.ParticipantGuess> guesses = new ArrayList<>();
+            for (int i = 0; i < calculatedGuesses.size(); i++) {
+                Guess guess = calculatedGuesses.get(i);
+                User user = guess.getUser();
+                
+                if (user != null) {
+                    guesses.add(new LastResultResponse.ParticipantGuess(
+                        user.getId(),
+                        user.getName(),
+                        user.getEmail(),
+                        guess.getScore(),
+                        i + 1, // posição no ranking
+                        true // tem palpite
+                    ));
+                }
+            }
+            
+            return guesses;
+        } catch (Exception e) {
+            log.error("Erro ao buscar palpites dos usuários", e);
             return new ArrayList<>();
         }
     }
