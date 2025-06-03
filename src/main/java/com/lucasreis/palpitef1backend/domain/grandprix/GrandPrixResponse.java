@@ -30,7 +30,8 @@ public class GrandPrixResponse {
     private LocalDateTime qualifyingDateTime;
     private LocalDateTime sprintDateTime;
     private LocalDateTime raceDateTime;
-    
+    private LocalDateTime bettingDeadline;
+
     // Informações adicionais
     private String timezone;
     private Integer laps;
