@@ -88,7 +88,7 @@ public interface GuessRepository extends JpaRepository<Guess, Long> {
     
     // Buscar palpites calculados por GP, tipo e que têm resultado real
     @Query("SELECT g FROM Guess g WHERE g.grandPrix.id = :grandPrixId AND g.guessType = :guessType AND g.calculated = true AND g.realResultPilotIds IS NOT NULL")
-    List<Guess> findByGrandPrixIdAndGuessTypeAndCalculatedTrue(@Param("grandPrixId") Long grandPrixId, @Param("guessType") String guessType);
+    List<Guess> findByGrandPrixIdAndGuessTypeAndCalculatedTrue(@Param("grandPrixId") Long grandPrixId, @Param("guessType") GuessType guessType);
     
     // ========== MÉTODOS PARA HISTÓRICO E RANKING DETALHADO ==========
     

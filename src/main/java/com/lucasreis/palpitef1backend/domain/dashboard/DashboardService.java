@@ -4,6 +4,7 @@ import com.lucasreis.palpitef1backend.domain.grandprix.GrandPrix;
 import com.lucasreis.palpitef1backend.domain.grandprix.GrandPrixRepository;
 import com.lucasreis.palpitef1backend.domain.guess.Guess;
 import com.lucasreis.palpitef1backend.domain.guess.GuessRepository;
+import com.lucasreis.palpitef1backend.domain.guess.GuessType;
 import com.lucasreis.palpitef1backend.domain.pilot.Pilot;
 import com.lucasreis.palpitef1backend.domain.pilot.PilotRepository;
 import com.lucasreis.palpitef1backend.domain.team.Team;
@@ -82,8 +83,8 @@ public class DashboardService {
         GrandPrix lastGP = recentCompleted.get(0);
         
         // Buscar resultados reais do GP do banco de dados
-        List<PilotResultInfo> qualifyingResults = getLastResultFromDatabase(lastGP.getId(), "QUALIFYING");
-        List<PilotResultInfo> raceResults = getLastResultFromDatabase(lastGP.getId(), "RACE");
+        List<PilotResultInfo> qualifyingResults = getLastResultFromDatabase(lastGP.getId(), GuessType.QUALIFYING);
+        List<PilotResultInfo> raceResults = getLastResultFromDatabase(lastGP.getId(), GuessType.RACE);
         
         return new LastResultResponse(lastGP.getName(), qualifyingResults, raceResults);
     }
@@ -169,7 +170,7 @@ public class DashboardService {
         }
     }
     
-    private List<PilotResultInfo> getLastResultFromDatabase(Long grandPrixId, String guessType) {
+    private List<PilotResultInfo> getLastResultFromDatabase(Long grandPrixId, GuessType guessType) {
         try {
             // Buscar palpites que têm resultado real para este GP e tipo
             List<Guess> guessesWithResult = guessRepository.findByGrandPrixIdAndGuessTypeAndCalculatedTrue(
