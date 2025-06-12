@@ -49,7 +49,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(JwtException.class)
     public ResponseEntity<Map<String, Object>> handleJwtException(JwtException e) {
-        log.warn("Erro geral no token JWT: {}", e.getMessage());
+        log.error("Erro geral no token JWT: {}", e);
         
         Map<String, Object> response = new HashMap<>();
         response.put("error", "Erro de autenticação");
