@@ -14,6 +14,7 @@ public class RaceScoreCalculator {
     
     public RaceScoreCalculator(List<Long> realRaceResult, List<Long> guessRace) {
         this.realRaceResult = realRaceResult;
+
         this.guessRace = guessRace;
         this.diffGrids = differencesBetwenGrids();
     }

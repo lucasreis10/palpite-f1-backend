@@ -163,4 +163,16 @@ public class GuessController {
     public ResponseEntity<String> testHistory() {
         return ResponseEntity.ok("Endpoint de histórico funcionando no GuessController!");
     }
+    
+    // ========== ENDPOINT PARA LIVE TIMING ==========
+    
+    @PostMapping("/live-timing")
+    public ResponseEntity<LiveTimingResponse> calculateLiveTiming(
+            @RequestBody @Valid LiveTimingRequest request) {
+        log.debug("Requisição para calcular live timing do GP {} tipo {}", 
+                request.getGrandPrixId(), request.getSessionType());
+        
+        LiveTimingResponse response = guessService.calculateLiveTiming(request);
+        return ResponseEntity.ok(response);
+    }
 } 

@@ -15,8 +15,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -325,5 +328,196 @@ public class GuessService {
         return guesses.stream()
                 .map(this::buildGuessResponse)
                 .collect(Collectors.toList());
+    }
+    
+    // ========== MÉTODO PARA LIVE TIMING ==========
+    
+    public LiveTimingResponse calculateLiveTiming(LiveTimingRequest request) {
+        log.debug("Calculando live timing para GP {} tipo {}", request.getGrandPrixId(), request.getSessionType());
+        
+        // Buscar Grand Prix
+        GrandPrix grandPrix = grandPrixRepository.findById(request.getGrandPrixId())
+                .orElseThrow(() -> new RuntimeException("Grande Prêmio não encontrado com ID: " + request.getGrandPrixId()));
+        
+        // Determinar tipo de palpite baseado na sessão
+        GuessType guessType = request.getSessionType().toUpperCase().contains("QUALIFYING") 
+            ? GuessType.QUALIFYING 
+            : GuessType.RACE;
+        
+        // Buscar todos os palpites para este GP e tipo
+        List<Guess> guesses = guessRepository.findByGrandPrixIdAndGuessTypeOrderByCreatedAt(
+                request.getGrandPrixId(), guessType);
+        
+        List<LiveTimingResponse.LiveRanking> liveRanking = new ArrayList<>();
+        
+        if (!guesses.isEmpty()) {
+            // Converter posições atuais para lista de IDs de pilotos
+            List<Long> currentPositionIds = convertCurrentPositionsToIds(request.getCurrentPositions());
+            
+            // Calcular pontuação atual para cada palpite
+            for (Guess guess : guesses) {
+                try {
+                    // Calcular pontuação atual usando as classes existentes
+                    BigDecimal currentScore = calculateScore(guess.getPilotIds(), currentPositionIds, guessType);
+                    
+                    // Calcular pontuação máxima possível
+                    BigDecimal totalPossibleScore = calculateMaxPossibleScore(guess.getPilotIds().size(), guessType);
+                    
+                    // Calcular acertos exatos
+                    int correctGuesses = calculateCorrectGuesses(guess.getPilotIds(), currentPositionIds);
+                    
+                    // Calcular diferenças de posição
+                    Map<Integer, Integer> positionDifferences = calculatePositionDifferences(
+                            guess.getPilotIds(), currentPositionIds);
+                    
+                    // Buscar informações dos pilotos do palpite
+                    List<PilotResponse> raceGuesses = getPilotResponses(guess.getPilotIds());
+                    
+                    LiveTimingResponse.LiveRanking ranking = LiveTimingResponse.LiveRanking.builder()
+                            .userId(guess.getUser().getId())
+                            .userName(guess.getUser().getName())
+                            .userEmail(guess.getUser().getEmail())
+                            .currentScore(currentScore)
+                            .totalPossibleScore(totalPossibleScore)
+                            .correctGuesses(correctGuesses)
+                            .raceGuesses(raceGuesses)
+                            .positionDifferences(positionDifferences)
+                            .build();
+                    
+                    liveRanking.add(ranking);
+                    
+                    log.debug("🎯 Usuário {}: {} pontos ({})", 
+                            guess.getUser().getName(), currentScore, request.getSessionType());
+                    
+                } catch (Exception e) {
+                    log.error("Erro ao calcular pontuação live para palpite {}: {}", guess.getId(), e.getMessage());
+                }
+            }
+            
+            // Ordenar por pontuação atual (maior primeiro)
+            liveRanking.sort((a, b) -> b.getCurrentScore().compareTo(a.getCurrentScore()));
+        }
+        
+        // Converter posições atuais para DriverStanding
+        List<LiveTimingResponse.DriverStanding> standings = request.getCurrentPositions().stream()
+                .map(pos -> LiveTimingResponse.DriverStanding.builder()
+                        .position(pos.getPosition())
+                        .driverNumber(pos.getDriverNumber())
+                        .driverName(pos.getDriverName())
+                        .driverAcronym(pos.getDriverAcronym())
+                        .teamName(pos.getTeamName())
+                        .teamColor(pos.getTeamColor())
+                        .gapToLeader(pos.getGapToLeader())
+                        .interval(pos.getInterval())
+                        .lastUpdate(LocalDateTime.now())
+                        .build())
+                .collect(Collectors.toList());
+        
+        return LiveTimingResponse.builder()
+                .session(LiveTimingResponse.SessionInfo.builder()
+                        .sessionKey(0L) // Será preenchido pelo frontend
+                        .sessionName(request.getSessionType())
+                        .sessionType(request.getSessionType())
+                        .dateStart(LocalDateTime.now())
+                        .dateEnd(LocalDateTime.now())
+                        .location(grandPrix.getCity())
+                        .countryName(grandPrix.getCountry())
+                        .circuitShortName(grandPrix.getCircuitName())
+                        .build())
+                .standings(standings)
+                .raceControl(new ArrayList<>()) // Será preenchido pelo frontend
+                .liveRanking(liveRanking)
+                .hasGuesses(!liveRanking.isEmpty())
+                .isMockData(false)
+                .hasF1Data(true)
+                .timestamp(LocalDateTime.now())
+                .sessionName(request.getSessionType())
+                .grandPrixName(grandPrix.getName())
+                .sessionStatus("ACTIVE")
+                .isActive(true)
+                .build();
+    }
+    
+    private List<Long> convertCurrentPositionsToIds(List<LiveTimingRequest.CurrentPosition> currentPositions) {
+        List<Long> pilotIds = new ArrayList<>();
+        
+        for (LiveTimingRequest.CurrentPosition position : currentPositions) {
+            // Tentar encontrar piloto pelo código/acrônimo primeiro
+            List<Pilot> pilots = pilotRepository.findByNameContaining(position.getDriverAcronym());
+            Optional<Pilot> pilot = pilots.stream()
+                    .filter(p -> p.getActive() && p.getCode() != null && p.getCode().equals(position.getDriverAcronym()))
+                    .findFirst();
+            
+            if (pilot.isEmpty()) {
+                // Tentar encontrar pelo nome de família
+                String[] nameParts = position.getDriverName().split(" ");
+                String lastName = nameParts[nameParts.length - 1];
+                pilots = pilotRepository.findByNameContaining(lastName);
+                pilot = pilots.stream()
+                        .filter(p -> p.getActive() && p.getFamilyName().equalsIgnoreCase(lastName))
+                        .findFirst();
+            }
+            
+            if (pilot.isPresent()) {
+                pilotIds.add(pilot.get().getId());
+                log.debug("✅ Match encontrado: {} (pos {}) -> {} (ID {})", 
+                        position.getDriverAcronym(), position.getPosition(), 
+                        pilot.get().getFamilyName(), pilot.get().getId());
+            } else {
+                // Se não encontrar, usar ID fictício para não afetar o cálculo
+                pilotIds.add(999999L + position.getPosition());
+                log.debug("❌ Sem match: {} (pos {})", position.getDriverAcronym(), position.getPosition());
+            }
+        }
+        
+        return pilotIds;
+    }
+    
+    private BigDecimal calculateMaxPossibleScore(int numberOfPositions, GuessType guessType) {
+        if (guessType == GuessType.QUALIFYING) {
+            // Pontuações máximas para qualifying
+            double[] maxScores = {5.0, 5.0, 5.0, 4.0, 4.0, 4.0, 3.0, 3.0, 3.0, 3.0, 2.55, 2.167};
+            return BigDecimal.valueOf(
+                    java.util.Arrays.stream(maxScores)
+                            .limit(numberOfPositions)
+                            .sum()
+            );
+        } else {
+            // Pontuações máximas para corrida
+            double[] maxScores = {25, 25, 25, 20, 20, 20, 15, 15, 15, 15, 12.75, 10.837, 9.212, 7.83};
+            return BigDecimal.valueOf(
+                    java.util.Arrays.stream(maxScores)
+                            .limit(numberOfPositions)
+                            .sum()
+            );
+        }
+    }
+    
+    private int calculateCorrectGuesses(List<Long> guessPilotIds, List<Long> currentPositionIds) {
+        int correctGuesses = 0;
+        
+        for (int i = 0; i < Math.min(guessPilotIds.size(), currentPositionIds.size()); i++) {
+            if (guessPilotIds.get(i).equals(currentPositionIds.get(i))) {
+                correctGuesses++;
+            }
+        }
+        
+        return correctGuesses;
+    }
+    
+    private Map<Integer, Integer> calculatePositionDifferences(List<Long> guessPilotIds, List<Long> currentPositionIds) {
+        Map<Integer, Integer> differences = new HashMap<>();
+        
+        for (int guessPos = 0; guessPos < guessPilotIds.size(); guessPos++) {
+            Long pilotId = guessPilotIds.get(guessPos);
+            int currentPos = currentPositionIds.indexOf(pilotId);
+            
+            if (currentPos >= 0) {
+                // Diferença: posição atual - posição do palpite (1-indexed)
+                differences.put(guessPos + 1, (currentPos + 1) - (guessPos + 1));
+            }
+        }
+        
+        return differences;
     }
 }
