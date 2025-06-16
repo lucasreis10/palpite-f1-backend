@@ -28,7 +28,7 @@ server:
 
 jwt:
   secret: ${JWT_SECRET:bXlfc3VwZXJfc2VjcmV0X2tleV90aGF0X3Nob3VsZF9iZV9jaGFuZ2VkX2luX3Byb2R1Y3Rpb24=}
-  expiration: ${JWT_EXPIRATION:86400000} # 24 hours
+  expiration: ${JWT_EXPIRATION:259200000} # 3 days (3 * 24 * 60 * 60 * 1000)
 
 logging:
   level:
