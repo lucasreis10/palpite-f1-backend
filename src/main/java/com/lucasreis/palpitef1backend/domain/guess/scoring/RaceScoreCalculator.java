@@ -61,6 +61,28 @@ public class RaceScoreCalculator {
         return totalScore.setScale(3, RoundingMode.HALF_UP);
     }
     
+    // Método para calcular pontuações individuais por posição
+    public Map<Integer, BigDecimal> calculateByPosition() {
+        Map<Integer, BigDecimal> positionScores = new HashMap<>();
+        
+        positionScores.put(0, calculateFirst());
+        positionScores.put(1, calculateSecond());
+        positionScores.put(2, calculateThird());
+        positionScores.put(3, calculateFourth());
+        positionScores.put(4, calculateFifth());
+        positionScores.put(5, calculateSixth());
+        positionScores.put(6, calculateSeventh());
+        positionScores.put(7, calculateEighth());
+        positionScores.put(8, calculateNinth());
+        positionScores.put(9, calculateTenth());
+        positionScores.put(10, calculateEleventh());
+        positionScores.put(11, calculateTwelfth());
+        positionScores.put(12, calculateThirteenth());
+        positionScores.put(13, calculateFourteenth());
+        
+        return positionScores;
+    }
+    
     private BigDecimal calculateFirst() {
         BigDecimal[] scores = {
             new BigDecimal("25"), 

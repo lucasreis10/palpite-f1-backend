@@ -2,6 +2,7 @@ package com.lucasreis.palpitef1backend.domain.dashboard;
 
 import com.lucasreis.palpitef1backend.domain.grandprix.GrandPrix;
 import com.lucasreis.palpitef1backend.domain.grandprix.GrandPrixRepository;
+import com.lucasreis.palpitef1backend.domain.grandprix.GrandPrixResponse;
 import com.lucasreis.palpitef1backend.domain.guess.Guess;
 import com.lucasreis.palpitef1backend.domain.guess.GuessRepository;
 import com.lucasreis.palpitef1backend.domain.guess.GuessType;

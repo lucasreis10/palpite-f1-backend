@@ -4,11 +4,15 @@ import com.lucasreis.palpitef1backend.domain.dashboard.DashboardService;
 import com.lucasreis.palpitef1backend.domain.dashboard.DashboardStatsResponse;
 import com.lucasreis.palpitef1backend.domain.dashboard.LastResultResponse;
 import com.lucasreis.palpitef1backend.domain.dashboard.TopUserResponse;
+import com.lucasreis.palpitef1backend.domain.grandprix.GrandPrix;
+import com.lucasreis.palpitef1backend.domain.grandprix.GrandPrixRepository;
+import com.lucasreis.palpitef1backend.domain.grandprix.GrandPrixResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -19,6 +23,7 @@ import java.util.List;
 public class DashboardController {
     
     private final DashboardService dashboardService;
+    private final GrandPrixRepository grandPrixRepository;
     
     @GetMapping("/stats")
     public ResponseEntity<DashboardStatsResponse> getDashboardStats() {
@@ -41,5 +46,27 @@ public class DashboardController {
         log.debug("Requisição para buscar último resultado");
         LastResultResponse lastResult = dashboardService.getLastResult();
         return ResponseEntity.ok(lastResult);
+    }
+    
+    @GetMapping("/next-races")
+    public ResponseEntity<List<GrandPrixResponse>> getNextRaces(
+            @RequestParam(defaultValue = "5") Integer limit) {
+        log.debug("Requisição para buscar próximas {} corridas", limit);
+        
+        try {
+            // Buscar próximos GPs diretamente do repository
+            List<GrandPrix> upcomingGrandPrix = grandPrixRepository.findUpcomingGrandPrix(LocalDateTime.now());
+            
+            // Limitar o resultado e converter para GrandPrixResponse
+            List<GrandPrixResponse> limitedResults = upcomingGrandPrix.stream()
+                .limit(limit)
+                .map(GrandPrixResponse::fromGrandPrix)
+                .toList();
+            
+            return ResponseEntity.ok(limitedResults);
+        } catch (Exception e) {
+            log.error("Erro ao buscar próximas corridas", e);
+            return ResponseEntity.ok(List.of()); // Retornar lista vazia em caso de erro
+        }
     }
 } 

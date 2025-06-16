@@ -59,6 +59,8 @@ public class GuessController {
         return ResponseEntity.ok(guesses);
     }
     
+
+    
     @GetMapping("/user/{userId}/season/{season}")
     public ResponseEntity<List<GuessResponse>> getUserGuessesBySeason(
             @PathVariable Long userId,
@@ -164,6 +166,8 @@ public class GuessController {
         return ResponseEntity.ok("Endpoint de histórico funcionando no GuessController!");
     }
     
+
+    
     // ========== ENDPOINT PARA LIVE TIMING ==========
     
     @PostMapping("/live-timing")
@@ -173,6 +177,18 @@ public class GuessController {
                 request.getGrandPrixId(), request.getSessionType());
         
         LiveTimingResponse response = guessService.calculateLiveTiming(request);
+        return ResponseEntity.ok(response);
+    }
+    
+    // ========== ENDPOINT PARA CALCULADORA ==========
+    
+    @PostMapping("/calculate-score")
+    public ResponseEntity<CalculatorResponse> calculateScore(
+            @RequestBody @Valid CalculatorRequest request) {
+        log.debug("Requisição para calcular pontuação da calculadora - tipo: {}, posições: {}", 
+                request.getGuessType(), request.getUserGuess().size());
+        
+        CalculatorResponse response = guessService.calculateScore(request);
         return ResponseEntity.ok(response);
     }
 } 

@@ -520,4 +520,113 @@ public class GuessService {
         
         return differences;
     }
+    
+    // ========== MÉTODO PARA CALCULADORA ==========
+    
+    public CalculatorResponse calculateScore(CalculatorRequest request) {
+        log.debug("Calculando pontuação da calculadora - tipo: {}, posições: {}", 
+                request.getGuessType(), request.getUserGuess().size());
+        
+        // Validar dados de entrada
+        if (request.getUserGuess().size() != request.getActualResult().size()) {
+            throw new RuntimeException("Palpite e resultado real devem ter o mesmo número de posições");
+        }
+        
+        // Calcular pontuação total usando as calculadoras otimizadas
+        BigDecimal totalScore = calculateScore(request.getUserGuess(), request.getActualResult(), request.getGuessType());
+        
+        // Calcular pontuação máxima possível
+        BigDecimal maxPossibleScore = calculateMaxPossibleScore(request.getUserGuess().size(), request.getGuessType());
+        
+        // Buscar informações dos pilotos em lote (otimização)
+        Map<Long, Pilot> pilotMap = new HashMap<>();
+        List<Long> allPilotIds = new ArrayList<>();
+        allPilotIds.addAll(request.getUserGuess());
+        allPilotIds.addAll(request.getActualResult());
+        
+        List<Pilot> pilots = pilotRepository.findAllById(allPilotIds);
+        for (Pilot pilot : pilots) {
+            pilotMap.put(pilot.getId(), pilot);
+        }
+        
+        // Calcular pontuações individuais usando as calculadoras completas
+        List<CalculatorResponse.PositionScore> individualScores = new ArrayList<>();
+        List<CalculatorResponse.ScoreDetail> details = new ArrayList<>();
+        
+        // Criar calculadora uma única vez para eficiência
+        if (request.getGuessType() == GuessType.QUALIFYING) {
+            QualifyingScoreCalculator calculator = new QualifyingScoreCalculator(request.getActualResult(), request.getUserGuess());
+            Map<Integer, BigDecimal> positionScores = calculator.calculateByPosition();
+            
+            for (int i = 0; i < request.getUserGuess().size(); i++) {
+                Long guessPilotId = request.getUserGuess().get(i);
+                Long actualPilotId = request.getActualResult().get(i);
+                
+                BigDecimal individualScore = positionScores.getOrDefault(i, BigDecimal.ZERO);
+                
+                String guessPilotName = pilotMap.get(guessPilotId) != null ? 
+                    pilotMap.get(guessPilotId).getFullName() : "Piloto " + guessPilotId;
+                String actualPilotName = pilotMap.get(actualPilotId) != null ? 
+                    pilotMap.get(actualPilotId).getFullName() : "Piloto " + actualPilotId;
+                
+                boolean isCorrect = guessPilotId.equals(actualPilotId);
+                
+                individualScores.add(CalculatorResponse.PositionScore.builder()
+                        .position(i + 1)
+                        .score(individualScore)
+                        .guessPilotId(guessPilotId)
+                        .actualPilotId(actualPilotId)
+                        .build());
+                
+                details.add(CalculatorResponse.ScoreDetail.builder()
+                        .position(i + 1)
+                        .guessPilotName(guessPilotName)
+                        .actualPilotName(actualPilotName)
+                        .points(individualScore)
+                        .isCorrect(isCorrect)
+                        .build());
+            }
+        } else {
+            RaceScoreCalculator calculator = new RaceScoreCalculator(request.getActualResult(), request.getUserGuess());
+            Map<Integer, BigDecimal> positionScores = calculator.calculateByPosition();
+            
+            for (int i = 0; i < request.getUserGuess().size(); i++) {
+                Long guessPilotId = request.getUserGuess().get(i);
+                Long actualPilotId = request.getActualResult().get(i);
+                
+                BigDecimal individualScore = positionScores.getOrDefault(i, BigDecimal.ZERO);
+                
+                String guessPilotName = pilotMap.get(guessPilotId) != null ? 
+                    pilotMap.get(guessPilotId).getFullName() : "Piloto " + guessPilotId;
+                String actualPilotName = pilotMap.get(actualPilotId) != null ? 
+                    pilotMap.get(actualPilotId).getFullName() : "Piloto " + actualPilotId;
+                
+                boolean isCorrect = guessPilotId.equals(actualPilotId);
+                
+                individualScores.add(CalculatorResponse.PositionScore.builder()
+                        .position(i + 1)
+                        .score(individualScore)
+                        .guessPilotId(guessPilotId)
+                        .actualPilotId(actualPilotId)
+                        .build());
+                
+                details.add(CalculatorResponse.ScoreDetail.builder()
+                        .position(i + 1)
+                        .guessPilotName(guessPilotName)
+                        .actualPilotName(actualPilotName)
+                        .points(individualScore)
+                        .isCorrect(isCorrect)
+                        .build());
+            }
+        }
+        
+        log.debug("✅ Calculadora - Pontuação total: {} de {} possíveis", totalScore, maxPossibleScore);
+        
+        return CalculatorResponse.builder()
+                .totalScore(totalScore)
+                .maxPossibleScore(maxPossibleScore)
+                .individualScores(individualScores)
+                .details(details)
+                .build();
+    }
 }
