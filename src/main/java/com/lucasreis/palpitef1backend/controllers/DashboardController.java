@@ -4,6 +4,8 @@ import com.lucasreis.palpitef1backend.domain.dashboard.DashboardService;
 import com.lucasreis.palpitef1backend.domain.dashboard.DashboardStatsResponse;
 import com.lucasreis.palpitef1backend.domain.dashboard.LastResultResponse;
 import com.lucasreis.palpitef1backend.domain.dashboard.TopUserResponse;
+import com.lucasreis.palpitef1backend.domain.dashboard.UserStatsResponse;
+import com.lucasreis.palpitef1backend.domain.dashboard.UserStatsService;
 import com.lucasreis.palpitef1backend.domain.grandprix.GrandPrix;
 import com.lucasreis.palpitef1backend.domain.grandprix.GrandPrixRepository;
 import com.lucasreis.palpitef1backend.domain.grandprix.GrandPrixResponse;
@@ -23,6 +25,7 @@ import java.util.List;
 public class DashboardController {
     
     private final DashboardService dashboardService;
+    private final UserStatsService userStatsService;
     private final GrandPrixRepository grandPrixRepository;
     
     @GetMapping("/stats")
@@ -46,6 +49,15 @@ public class DashboardController {
         log.debug("Requisição para buscar último resultado");
         LastResultResponse lastResult = dashboardService.getLastResult();
         return ResponseEntity.ok(lastResult);
+    }
+    
+    @GetMapping("/user-stats/{userId}")
+    public ResponseEntity<UserStatsResponse> getUserAdvancedStats(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "2025") Integer season) {
+        log.debug("Requisição para buscar estatísticas avançadas do usuário {} na temporada {}", userId, season);
+        UserStatsResponse userStats = userStatsService.getUserAdvancedStats(userId, season);
+        return ResponseEntity.ok(userStats);
     }
     
     @GetMapping("/next-races")
