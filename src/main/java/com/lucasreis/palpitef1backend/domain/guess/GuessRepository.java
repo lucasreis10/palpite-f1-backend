@@ -249,36 +249,40 @@ public interface GuessRepository extends JpaRepository<Guess, Long> {
            "ORDER BY gp.round")
     List<Object[]> getUserScoreEvolution(@Param("userId") Long userId, @Param("season") Integer season);
     
-    // Buscar análise de acerto por posição - simplificada
-    @Query("SELECT g.guessType, " +
-           "COUNT(g) as totalGuesses, " +
+    // Buscar análise de acerto por posição com dados de acertos reais
+    @Query(value = "SELECT " +
+           "g.guess_type as guessType, " +
+           "COUNT(g.id) as totalGuesses, " +
            "COALESCE(AVG(g.score), 0) as averagePoints, " +
-           "COALESCE(MAX(g.score), 0) as bestScore, " +
-           "COALESCE(MIN(g.score), 0) as worstScore " +
-           "FROM Guess g " +
-           "WHERE g.user.id = :userId AND g.grandPrix.season = :season AND g.calculated = true " +
-           "GROUP BY g.guessType " +
-           "ORDER BY g.guessType")
+           "COALESCE(SUM(CASE WHEN gp.position = grr.position THEN 1 ELSE 0 END), 0) as correctGuesses " +
+           "FROM guesses g " +
+           "JOIN guess_pilots gp ON g.id = gp.guess_id " +
+           "LEFT JOIN guess_real_results grr ON grr.guess_id = g.id AND grr.pilot_id = gp.pilot_id " +
+           "JOIN grand_prix gpr ON g.grand_prix_id = gpr.id " +
+           "WHERE g.user_id = :userId AND gpr.season = :season AND g.calculated = true " +
+           "GROUP BY g.guess_type " +
+           "ORDER BY g.guess_type", nativeQuery = true)
     List<Object[]> getUserPositionAccuracy(@Param("userId") Long userId, @Param("season") Integer season);
     
-    // Buscar performance por piloto - usando consulta nativa para trabalhar com a estrutura real
+    // Buscar performance por piloto com acertos calculados
     @Query(value = "SELECT " +
-           "pi.pilot_id as pilotId, " +
+           "p.id as pilotId, " +
            "p.given_name as givenName, " +
            "p.family_name as familyName, " +
            "COALESCE(c.name, 'Sem equipe') as teamName, " +
-           "COUNT(pi.guess_id) as timesGuessed, " +
-           "COALESCE(AVG(pi.score), 0) as averagePoints " +
-           "FROM ( " +
-           "    SELECT g.id as guess_id, g.score, gp.pilot_id " +
-           "    FROM guesses g " +
-           "    JOIN guess_pilots gp ON g.id = gp.guess_id " +
-           "    JOIN grand_prix gpr ON g.grand_prix_id = gpr.id " +
-           "    WHERE g.user_id = :userId AND gpr.season = :season AND g.calculated = true " +
-           ") pi " +
-           "JOIN pilots p ON p.id = pi.pilot_id " +
+           "COUNT(gp.guess_id) as timesGuessed, " +
+           "COALESCE(AVG(g.score), 0) as averagePoints, " +
+           "COALESCE(SUM(CASE WHEN gp.position = grr.position THEN 1 ELSE 0 END), 0) as correctGuesses, " +
+           "COALESCE(MIN(gp.position), 0) as bestPosition, " +
+           "COALESCE(MAX(gp.position), 0) as worstPosition " +
+           "FROM guess_pilots gp " +
+           "JOIN guesses g ON g.id = gp.guess_id " +
+           "JOIN grand_prix gpr ON g.grand_prix_id = gpr.id " +
+           "JOIN pilots p ON p.id = gp.pilot_id " +
            "LEFT JOIN constructors c ON c.id = p.constructor_id " +
-           "GROUP BY pi.pilot_id, p.given_name, p.family_name, c.name " +
+           "LEFT JOIN guess_real_results grr ON grr.guess_id = g.id AND grr.pilot_id = gp.pilot_id " +
+           "WHERE g.user_id = :userId AND gpr.season = :season AND g.calculated = true " +
+           "GROUP BY p.id, p.given_name, p.family_name, c.name " +
            "ORDER BY timesGuessed DESC", nativeQuery = true)
     List<Object[]> getUserPilotPerformance(@Param("userId") Long userId, @Param("season") Integer season);
     

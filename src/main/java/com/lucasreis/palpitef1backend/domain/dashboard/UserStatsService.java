@@ -33,21 +33,35 @@ public class UserStatsService {
             
             User user = userOpt.get();
             
-            // Buscar estatísticas gerais - por enquanto simplificadas
-            UserStatsResponse.GeneralStats generalStats = buildGeneralStatsSimple(userId, season);
+            // Buscar estatísticas gerais completas
+            UserStatsResponse.GeneralStats generalStats = buildGeneralStats(userId, season);
             
-            // Por enquanto, retornar apenas as estatísticas básicas
+            // Buscar evolução da pontuação por GP
+            List<UserStatsResponse.ScoreEvolution> scoreEvolution = buildScoreEvolution(userId, season);
+            
+            // Buscar dados de acurácia por tipo de palpite
+            List<UserStatsResponse.PositionAccuracy> positionAccuracy = processPositionAccuracy(guessRepository.getUserPositionAccuracy(userId, season));
+            
+            // Buscar performance por piloto
+            List<UserStatsResponse.PilotPerformance> pilotPerformance = processPilotPerformance(guessRepository.getUserPilotPerformance(userId, season));
+            
+            // Buscar performance por circuito (simplificada)
+            List<UserStatsResponse.CircuitTypePerformance> circuitPerformance = buildCircuitPerformance(userId, season);
+            
+            // Buscar performance por clima (simplificada)
+            List<UserStatsResponse.WeatherPerformance> weatherPerformance = buildWeatherPerformance(userId, season);
+            
             return UserStatsResponse.builder()
                     .userId(userId)
                     .userName(user.getName())
                     .userEmail(user.getEmail())
                     .season(season)
                     .generalStats(generalStats)
-                    .scoreEvolution(new ArrayList<>())
-                    .positionAccuracy(new ArrayList<>())
-                    .pilotPerformance(new ArrayList<>())
-                    .circuitPerformance(new ArrayList<>())
-                    .weatherPerformance(new ArrayList<>())
+                    .scoreEvolution(scoreEvolution)
+                    .positionAccuracy(positionAccuracy)
+                    .pilotPerformance(pilotPerformance)
+                    .circuitPerformance(circuitPerformance)
+                    .weatherPerformance(weatherPerformance)
                     .build();
         } catch (Exception e) {
             log.error("Erro ao calcular estatísticas avançadas para usuário {} na temporada {}: {}", userId, season, e.getMessage(), e);
@@ -218,7 +232,7 @@ public class UserStatsService {
         
         for (Object[] row : performanceData) {
             String circuitType = (String) row[0];
-            Long eventsParticipated = (Long) row[1];
+            Long eventsParticipated = toLong(row[1]);
             BigDecimal averageScore = toBigDecimal(row[2]);
             BigDecimal bestScore = toBigDecimal(row[3]);
             BigDecimal qualifyingAverage = toBigDecimal(row[4]);
@@ -257,7 +271,7 @@ public class UserStatsService {
         
         for (Object[] row : performanceData) {
             String weatherCondition = (String) row[0];
-            Long eventsParticipated = (Long) row[1];
+            Long eventsParticipated = toLong(row[1]);
             BigDecimal averageScore = toBigDecimal(row[2]);
             BigDecimal bestScore = toBigDecimal(row[3]);
             BigDecimal qualifyingAverage = toBigDecimal(row[4]);
@@ -300,6 +314,44 @@ public class UserStatsService {
         }
         return BigDecimal.ZERO;
     }
+
+    private Long toLong(Object value) {
+        if (value == null) {
+            return 0L;
+        }
+        if (value instanceof Long) {
+            return (Long) value;
+        }
+        if (value instanceof BigDecimal) {
+            return ((BigDecimal) value).longValue();
+        }
+        if (value instanceof Double) {
+            return ((Double) value).longValue();
+        }
+        if (value instanceof Integer) {
+            return ((Integer) value).longValue();
+        }
+        return 0L;
+    }
+
+    private Integer toInteger(Object value) {
+        if (value == null) {
+            return 0;
+        }
+        if (value instanceof Integer) {
+            return (Integer) value;
+        }
+        if (value instanceof BigDecimal) {
+            return ((BigDecimal) value).intValue();
+        }
+        if (value instanceof Long) {
+            return ((Long) value).intValue();
+        }
+        if (value instanceof Double) {
+            return ((Double) value).intValue();
+        }
+        return 0;
+    }
     
     private String getPositionName(Integer position, String guessType) {
         if (position == null) return "N/A";
@@ -315,19 +367,27 @@ public class UserStatsService {
         List<UserStatsResponse.PositionAccuracy> positionAccuracy = new ArrayList<>();
         
         for (Object[] row : positionData) {
-            GuessType guessType = (GuessType) row[0];
-            Long totalGuesses = (Long) row[1];
-            BigDecimal averagePoints = row[2] instanceof Double ? 
-                BigDecimal.valueOf((Double) row[2]) : (BigDecimal) row[2];
+            String guessTypeStr = (String) row[0]; // Agora vem como String da query nativa
+            GuessType guessType = GuessType.valueOf(guessTypeStr);
+            Long totalGuesses = toLong(row[1]);
+            BigDecimal averagePoints = toBigDecimal(row[2]);
+            Long correctGuesses = toLong(row[3]); // Agora temos os acertos reais
             
-            // Como simplificamos a consulta, vamos criar dados agregados por tipo
+            // Calcular taxa de acerto
+            BigDecimal accuracy = BigDecimal.ZERO;
+            if (totalGuesses > 0) {
+                accuracy = BigDecimal.valueOf(correctGuesses)
+                    .divide(BigDecimal.valueOf(totalGuesses), 4, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100));
+            }
+            
             positionAccuracy.add(UserStatsResponse.PositionAccuracy.builder()
                 .position(guessType == GuessType.QUALIFYING ? 1 : 2) // 1 para quali, 2 para race
                 .positionName(guessType == GuessType.QUALIFYING ? "Qualifying" : "Race")
                 .guessType(guessType.toString())
                 .totalGuesses(totalGuesses.intValue())
-                .correctGuesses(0) // Não conseguimos calcular sem a entidade Result
-                .accuracy(BigDecimal.ZERO) // Não conseguimos calcular sem a entidade Result
+                .correctGuesses(correctGuesses.intValue()) // Agora com dados reais
+                .accuracy(accuracy.setScale(2, RoundingMode.HALF_UP)) // Taxa de acerto calculada
                 .averagePoints(averagePoints.setScale(3, RoundingMode.HALF_UP))
                 .build());
         }
@@ -339,26 +399,36 @@ public class UserStatsService {
         List<UserStatsResponse.PilotPerformance> pilotPerformance = new ArrayList<>();
         
         for (Object[] row : pilotData) {
-            Long pilotId = (Long) row[0];
+            Long pilotId = toLong(row[0]);
             String givenName = (String) row[1];
             String familyName = (String) row[2];
             String teamName = (String) row[3];
-            Long timesGuessed = (Long) row[4];
-            BigDecimal averagePoints = row[5] instanceof Double ? 
-                BigDecimal.valueOf((Double) row[5]) : (BigDecimal) row[5];
+            Long timesGuessed = toLong(row[4]);
+            BigDecimal averagePoints = toBigDecimal(row[5]);
+            Long correctGuesses = toLong(row[6]);
+            Integer bestPosition = toInteger(row[7]);
+            Integer worstPosition = toInteger(row[8]);
             
             String fullName = givenName + " " + familyName;
+            
+            // Calcular porcentagem de acerto
+            BigDecimal accuracy = BigDecimal.ZERO;
+            if (timesGuessed > 0) {
+                accuracy = BigDecimal.valueOf(correctGuesses)
+                    .divide(BigDecimal.valueOf(timesGuessed), 4, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100));
+            }
             
             pilotPerformance.add(UserStatsResponse.PilotPerformance.builder()
                 .pilotId(pilotId)
                 .pilotName(fullName)
                 .teamName(teamName)
                 .timesGuessed(timesGuessed.intValue())
-                .correctGuesses(0) // Não conseguimos calcular sem a entidade Result
-                .accuracy(BigDecimal.ZERO) // Não conseguimos calcular sem a entidade Result
+                .correctGuesses(correctGuesses.intValue())
+                .accuracy(accuracy.setScale(2, RoundingMode.HALF_UP))
                 .averagePoints(averagePoints.setScale(3, RoundingMode.HALF_UP))
-                .bestPosition(0) // Não conseguimos calcular sem a entidade Result
-                .worstPosition(0) // Não conseguimos calcular sem a entidade Result
+                .bestPosition(bestPosition + 1) // +1 porque position é 0-based na tabela
+                .worstPosition(worstPosition + 1) // +1 porque position é 0-based na tabela
                 .build());
         }
         
