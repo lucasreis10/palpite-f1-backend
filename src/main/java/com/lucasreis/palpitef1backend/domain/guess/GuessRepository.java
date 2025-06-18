@@ -355,4 +355,61 @@ public interface GuessRepository extends JpaRepository<Guess, Long> {
            "FROM Guess g " +
            "WHERE g.grandPrix.season = :season AND g.calculated = :calculated")
     long countDistinctUsersBySeasonAndCalculated(@Param("season") Integer season, @Param("calculated") Boolean calculated);
+    
+    // ===== QUERIES PARA SISTEMA DE COMPARAÇÃO =====
+    
+    // Buscar estatísticas básicas de um usuário para comparação
+    @Query("SELECT COUNT(g), COALESCE(SUM(g.score), 0) " +
+           "FROM Guess g " +
+           "WHERE g.user.id = :userId AND g.grandPrix.season = :season AND g.calculated = true")
+    List<Object[]> getUserBasicStats(@Param("userId") Long userId, @Param("season") Integer season);
+    
+    // Buscar melhor pontuação em uma corrida
+    @Query("SELECT COALESCE(MAX(g.score), 0) " +
+           "FROM Guess g " +
+           "WHERE g.user.id = :userId AND g.grandPrix.season = :season AND g.calculated = true")
+    BigDecimal getUserBestRaceScore(@Param("userId") Long userId, @Param("season") Integer season);
+    
+    // Buscar pior pontuação em uma corrida
+    @Query("SELECT COALESCE(MIN(g.score), 0) " +
+           "FROM Guess g " +
+           "WHERE g.user.id = :userId AND g.grandPrix.season = :season AND g.calculated = true")
+    BigDecimal getUserWorstRaceScore(@Param("userId") Long userId, @Param("season") Integer season);
+    
+    // Contar palpites corretos (score > 0)
+    @Query("SELECT COUNT(g) " +
+           "FROM Guess g " +
+           "WHERE g.user.id = :userId AND g.grandPrix.season = :season AND g.calculated = true AND g.score > 0")
+    Long countCorrectPredictions(@Param("userId") Long userId, @Param("season") Integer season);
+    
+    // Buscar média de pontuação em qualifying
+    @Query("SELECT COALESCE(AVG(g.score), 0) " +
+           "FROM Guess g " +
+           "WHERE g.user.id = :userId AND g.grandPrix.season = :season AND g.guessType = 'QUALIFYING' AND g.calculated = true")
+    BigDecimal getUserQualifyingAverage(@Param("userId") Long userId, @Param("season") Integer season);
+    
+    // Buscar média de pontuação em race
+    @Query("SELECT COALESCE(AVG(g.score), 0) " +
+           "FROM Guess g " +
+           "WHERE g.user.id = :userId AND g.grandPrix.season = :season AND g.guessType = 'RACE' AND g.calculated = true")
+    BigDecimal getUserRaceAverage(@Param("userId") Long userId, @Param("season") Integer season);
+    
+    // Calcular consistência (desvio padrão das pontuações) - approximado
+    @Query("SELECT COALESCE(SQRT(AVG(g.score * g.score) - (AVG(g.score) * AVG(g.score))), 0) " +
+           "FROM Guess g " +
+           "WHERE g.user.id = :userId AND g.grandPrix.season = :season AND g.calculated = true")
+    BigDecimal getUserConsistency(@Param("userId") Long userId, @Param("season") Integer season);
+    
+    // Comparação head-to-head entre dois usuários por GP
+    @Query("SELECT gp.id, gp.name, " +
+           "COALESCE(SUM(CASE WHEN g.user.id = :userId1 THEN g.score ELSE 0 END), 0) as user1Score, " +
+           "COALESCE(SUM(CASE WHEN g.user.id = :userId2 THEN g.score ELSE 0 END), 0) as user2Score " +
+           "FROM GrandPrix gp " +
+           "JOIN Guess g ON g.grandPrix.id = gp.id " +
+           "WHERE gp.season = :season AND g.calculated = true " +
+           "AND g.user.id IN (:userId1, :userId2) " +
+           "GROUP BY gp.id, gp.name " +
+           "HAVING COUNT(DISTINCT g.user.id) = 2 " +
+           "ORDER BY gp.round")
+    List<Object[]> getHeadToHeadRaceComparisons(@Param("userId1") Long userId1, @Param("userId2") Long userId2, @Param("season") Integer season);
 } 
