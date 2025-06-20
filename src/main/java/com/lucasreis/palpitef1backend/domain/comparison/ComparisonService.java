@@ -74,7 +74,10 @@ public class ComparisonService {
         Object[] stats = basicStats.get(0);
         Long totalGuesses = (Long) stats[0];
         BigDecimal totalPoints = (BigDecimal) stats[1];
-        BigDecimal averagePoints = totalPoints.divide(BigDecimal.valueOf(totalGuesses), 2, RoundingMode.HALF_UP);
+        
+        // Verificar se há palpites para evitar divisão por zero
+        BigDecimal averagePoints = totalGuesses > 0 ? 
+            totalPoints.divide(BigDecimal.valueOf(totalGuesses), 2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
         
         // Buscar melhor pontuação em uma corrida
         BigDecimal bestRaceScore = guessRepository.getUserBestRaceScore(userId, season);
@@ -104,8 +107,10 @@ public class ComparisonService {
         return comparisons.stream().map(row -> {
             Long grandPrixId = (Long) row[0];
             String grandPrixName = (String) row[1];
-            BigDecimal user1Score = (BigDecimal) row[2];
-            BigDecimal user2Score = (BigDecimal) row[3];
+            java.time.LocalDateTime raceDate = row[2] instanceof java.time.LocalDateTime ? 
+                (java.time.LocalDateTime) row[2] : null;
+            BigDecimal user1Score = (BigDecimal) row[3];
+            BigDecimal user2Score = (BigDecimal) row[4];
             
             Long winner = null;
             if (user1Score.compareTo(user2Score) > 0) {
@@ -117,6 +122,7 @@ public class ComparisonService {
             return HeadToHeadRaceComparison.builder()
                 .grandPrixId(grandPrixId)
                 .grandPrixName(grandPrixName)
+                .raceDate(raceDate)
                 .user1Score(user1Score)
                 .user2Score(user2Score)
                 .winner(winner)

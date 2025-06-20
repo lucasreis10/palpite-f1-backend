@@ -401,14 +401,14 @@ public interface GuessRepository extends JpaRepository<Guess, Long> {
     BigDecimal getUserConsistency(@Param("userId") Long userId, @Param("season") Integer season);
     
     // Comparação head-to-head entre dois usuários por GP
-    @Query("SELECT gp.id, gp.name, " +
+    @Query("SELECT gp.id, gp.name, gp.raceDateTime, " +
            "COALESCE(SUM(CASE WHEN g.user.id = :userId1 THEN g.score ELSE 0 END), 0) as user1Score, " +
            "COALESCE(SUM(CASE WHEN g.user.id = :userId2 THEN g.score ELSE 0 END), 0) as user2Score " +
            "FROM GrandPrix gp " +
            "JOIN Guess g ON g.grandPrix.id = gp.id " +
            "WHERE gp.season = :season AND g.calculated = true " +
            "AND g.user.id IN (:userId1, :userId2) " +
-           "GROUP BY gp.id, gp.name " +
+           "GROUP BY gp.id, gp.name, gp.raceDateTime " +
            "HAVING COUNT(DISTINCT g.user.id) = 2 " +
            "ORDER BY gp.round")
     List<Object[]> getHeadToHeadRaceComparisons(@Param("userId1") Long userId1, @Param("userId2") Long userId2, @Param("season") Integer season);
